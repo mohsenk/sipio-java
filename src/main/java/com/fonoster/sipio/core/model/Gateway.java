@@ -33,6 +33,14 @@ public class Gateway {
         }
     }
 
+    public List<String> getRegistries() {
+        return registries;
+    }
+
+    public void setRegistries(List<String> registries) {
+        this.registries = registries;
+    }
+
     public String getName() {
         return name;
     }

@@ -2,6 +2,8 @@ package com.fonoster.sipio.registry;
 
 import com.fonoster.sipio.core.ConfigManager;
 import com.fonoster.sipio.core.model.Config;
+import com.fonoster.sipio.core.model.Gateway;
+import com.fonoster.sipio.repository.GateWayRepository;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import gov.nist.javax.sip.Utils;
@@ -17,15 +19,14 @@ import javax.sip.message.Request;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.*;
 
 
 public class Registry {
     static final Logger logger = LogManager.getLogger(Registry.class);
-    private final Float checkExpiresTime;
+    private final Integer checkExpiresTime;
     private final Integer expires;
     private final SipProvider sipProvider;
     private final Config config;
@@ -36,7 +37,7 @@ public class Registry {
     private final HashMap<String, RegistryModel> registry;
     int cseq = 0;
 
-    public Registry(SipProvider sipProvider, Integer expires, Float checkExpiresTime) throws PeerUnavailableException {
+    public Registry(SipProvider sipProvider, Integer expires, Integer checkExpiresTime) throws PeerUnavailableException {
         this.expires = expires;
         this.checkExpiresTime = checkExpiresTime;
         this.sipProvider = sipProvider;
@@ -50,7 +51,7 @@ public class Registry {
     }
 
     public Registry(SipProvider sipProvider) throws PeerUnavailableException {
-        this(sipProvider,300,0.5f);
+        this(sipProvider, 300, 1);
     }
 
     public void requestChallenge(String username, String gwRef, String peerHost, String transport, String received, Integer rport) throws ParseException, InvalidArgumentException {
@@ -159,55 +160,58 @@ public class Registry {
         return new Gson().toJson(s).toString();
     }
 
+    public boolean isExpired(String host) {
+        RegistryModel reg = registry.get(host);
+        if (reg == null) return true;
+
+        long elapsed = Duration.between(LocalDateTime.now(), reg.getRegisteredOn()).getSeconds();
+        if ((reg.getExpires() - elapsed) <= 0) {
+            return true;
+        }
+        return false;
+    }
+
     public void start() {
         logger.info("Starting Registry service");
-//        var registry = this.registry;
-//        var gatewaysAPI = this.gatewaysAPI
-//        // var myRegistry = new Registry(this.sipProvider, this.dataAPIs)
-//        var myRegistry = this
-//
-//        function isExpired (host) {
-//            const reg = registry.get(host)
-//
-//        if (reg == null) return true
-//
-//            const elapsed = (Date.now() - reg.registeredOn) / 1000
-//        if ((reg.expires - elapsed) <= 0) {
-//            return true
-//        }
-//        return false
-//        }
-//
-//        let registerTask = new java.util.TimerTask({
-//                run:function() {
-//                const result = gatewaysAPI.getGateways()
-//            if (result.status != Status.OK) return
-//
-//                    result.obj.forEach(function(gateway) {
-//                let regService = gateway.spec.regService
-//
-//                if (isExpired(regService.host)) {
-//                    LOG.debug("Register with " + gateway.metadata.name + " using "
-//                            + gateway.spec.regService.credentials.username + "@" + gateway.spec.regService.host)
-//                    myRegistry.requestChallenge(regService.credentials.username,
-//                            gateway.metadata.ref, regService.host, regService.transport)
-//                }
-//
-//                let registries = gateway.spec.regService.registries
-//
-//                if (registries != undefined) {
-//                    registries.forEach(function(h) {
-//                        if (isExpired(regService.host)) {
-//                            LOG.debug("Register with " + gateway.metadata.name + " using " + gateway.spec.regService.credentials.username + "@" + h)
-//                            myRegistry.requestChallenge(gateway.spec.regService.credentials.username, gateway.metadata.ref, h, gateway.spec.regService.transport)
-//                        }
-//                    })
-//                }
-//            })
-//        }
-//        })
-//
-//        new java.util.Timer().schedule(registerTask, 10000, this.checkExpiresTime * 60 * 1000)
+        HashMap<String, RegistryModel> registry = this.registry;
+
+        final Registry myRegistry = this;
+        TimerTask registerTask = new TimerTask() {
+            @Override
+            public void run() {
+                List<Gateway> result = GateWayRepository.getGateways();
+                if (result == null) return;
+                for (Gateway gateway : result) {
+                    if (isExpired(gateway.getHost())) {
+                        logger.info("Register with " + gateway.getName() + " using "
+                                + gateway.getUserName() + "@" + gateway.getHost());
+
+                        try {
+                            myRegistry.requestChallenge(gateway.getUserName(),
+                                    gateway.getRef(), gateway.getHost(), gateway.getTransport(), null, null);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+
+                        if (!gateway.getRegistries().isEmpty()) {
+                            for (String registry : gateway.getRegistries()) {
+
+                                if (isExpired(gateway.getHost())) {
+                                    logger.debug("Register with " + gateway.getName() + " using " + gateway.getUserName() + "@" + registry);
+                                    try {
+                                        myRegistry.requestChallenge(gateway.getUserName(), gateway.getRef(), registry, gateway.getTransport(), null, null);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        new Timer().schedule(registerTask, 10000, (this.checkExpiresTime * 60 * 1000));
     }
 
     public void stop() {

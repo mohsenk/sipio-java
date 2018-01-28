@@ -13,9 +13,12 @@ import javax.sip.address.SipURI;
 import javax.sip.address.TelURL;
 import javax.sip.address.URI;
 import java.text.ParseException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.temporal.TemporalUnit;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class Locator {
@@ -26,7 +29,7 @@ public class Locator {
     private Integer checkExpiresTime;
 
 
-    public Locator( Integer checkExpiresTime) throws PeerUnavailableException {
+    public Locator(Integer checkExpiresTime) throws PeerUnavailableException {
         this.checkExpiresTime = checkExpiresTime;
         this.db = new HashMap();
         this.addressFactory = SipFactory.getInstance().createAddressFactory();
@@ -114,7 +117,7 @@ public class Locator {
                 }
             } catch (Exception e) {
                 // Ignore error
-                logger.error("",e);
+                logger.error("", e);
             }
 
             // Endpoint can only be reach thru a gateway
@@ -133,58 +136,45 @@ public class Locator {
             return;
         }
         // Not using aorAsString because we need to consider the port, etc.
-        ((HashMap)this.db.get(aor)).remove(contactURI.toString());
+        ((HashMap) this.db.get(aor)).remove(contactURI.toString());
 
         if (((HashMap) this.db.get(aor)).isEmpty()) this.db.remove(aor);
     }
 
     public Route getEgressRouteForAOR(SipURI addressOfRecord) throws Exception {
-        if (!(addressOfRecord instanceof javax.sip.address.SipURI))
-            throw new Exception("AOR must be instance of javax.sip.address.SipURI");
-
-
         List<Domain> domains = DomainRepository.getDomains();
+        if (domains == null) {
+            return null;
+        }
+        for (Domain domain : domains) {
+            if (domain.getRule() == null) continue;
+            // Get DID and Gateway info
+            DID did = DIDsRepository.getDID(domain.getDidRef());
+            if (did == null) continue;
+            Gateway gateway = GateWayRepository.getGateway(did.getGwRef());
+            if (gateway == null) continue;
+            String gwHost = gateway.getHost();
+            String gwUsername = gateway.getUserName();
+            String gwRef = gateway.getRef();
+            String egressRule = domain.getRule();
+            String pattern = "sip:" + egressRule + "@" + domain.getDomainUri();
 
-        Route route;
-
-        if (domains != null) {
-
-            for (Domain domain : domains) {
-                if (domain.getRule() != null) {
-                    // Get DID and Gateway info
-                    DID did = DIDsRepository.getDID(domain.getDidRef());
-
-                    if (did != null) {
-                        Gateway gateway = GateWayRepository.getGateway(did.getGwRef());
-
-                        if (gateway != null) {
-                            String gwHost = gateway.getHost();
-                            String gwUsername = gateway.getUserName();
-                            String gwRef = gateway.getRef();
-                            String egressRule = domain.getRule();
-                            String pattern = "sip:" + egressRule + "@" + domain.getDomainUri();
-
-                            if (pattern.matches(addressOfRecord.toString())) {
-                                SipURI contactURI = addressFactory.createSipURI(addressOfRecord.getUser(), gwHost);
-                                contactURI.setSecure(addressOfRecord.isSecure());
-                                route = new Route();
-                                route.setLinkAOR(false);
-                                route.setThruGw(true);
-                                route.setRule(egressRule);
-                                route.setGwUsername(gwUsername);
-                                route.setGwRef(gwRef);
-                                route.setGwHost(gwHost);
-                                route.setDidRef(did.getRef());
-                                route.setDID(did.getTelUrl().split(":")[0]);
-                                route.setContactURI(contactURI);
-                                return route;
-                            }
-                        }
-                    }
-                }
+            if (pattern.matches(addressOfRecord.toString())) {
+                SipURI contactURI = addressFactory.createSipURI(addressOfRecord.getUser(), gwHost);
+                contactURI.setSecure(addressOfRecord.isSecure());
+                Route route = new Route();
+                route.setLinkAOR(false);
+                route.setThruGw(true);
+                route.setRule(egressRule);
+                route.setGwUsername(gwUsername);
+                route.setGwRef(gwRef);
+                route.setGwHost(gwHost);
+                route.setDidRef(did.getRef());
+                route.setDID(did.getTelUrl().split(":")[0]);
+                route.setContactURI(contactURI);
+                return route;
             }
         }
-
         return null;
     }
 
@@ -212,35 +202,31 @@ public class Locator {
 
     public void start() {
         logger.info("Starting Location service");
-        // @todo - wrote this.
-        //Map<String, Map> locDB = this.db;
-//
-//        let unbindExpiredTask = new java.util.TimerTask() {
-//            @Override
-//            public void run() {
-//                for (String key : locDB.keySet()) {
-//                    Map routes = locDB.get(key);
-//                    while (i.hasNext()) {
-//                        Set i = routes.keySet();
-//                        const route = i.next()
-//                        const elapsed = (Date.now() - route.registeredOn) / 1000
-//                        if ((route.expires - elapsed) <= 0) {
-//                            i.remove()
-//                        }
-//
-//                        if (routes.size() == 0) e.remove()
-//                    }
-//                }
-//                while (e.hasNext()) {
-//                    let routes = e.next()
-//
-//
-//
-//                }
-//            }
-//        };
+        Map<String, Object> locDB = this.db;
 
-        //     new java.util.Timer().schedule(unbindExpiredTask, 5000, this.checkExpiresTime * 60 * 1000)
+        TimerTask unbindExpiredTask = new TimerTask() {
+            @Override
+            public void run() {
+                Iterator e = locDB.values().iterator();
+
+                while (e.hasNext()) {
+                    Map routes = (Map) e.next();
+                    Iterator i = routes.values().iterator();
+
+                    while (i.hasNext()) {
+                        Route route = (Route) i.next();
+                        long elapsed = Duration.between(LocalDateTime.now(), route.getRegisteredOn()).getSeconds();
+                        if ((route.getExpires() - elapsed) <= 0) {
+                            i.remove();
+                            logger.info("Expired user , remove {} from DB", route.getContactURI().toString());
+                        }
+                        if (routes.size() == 0) e.remove();
+                    }
+                }
+            }
+        };
+
+        new java.util.Timer().schedule(unbindExpiredTask, 5000, this.checkExpiresTime * 60 * 1000);
     }
 
     public void stop() {

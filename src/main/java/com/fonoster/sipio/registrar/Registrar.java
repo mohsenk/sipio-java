@@ -5,6 +5,7 @@ import com.fonoster.sipio.repository.AgentRepository;
 import com.fonoster.sipio.repository.PeerRepository;
 import com.fonoster.sipio.location.Locator;
 import com.fonoster.sipio.utils.AuthHelper;
+import gov.nist.javax.sip.clientauthutils.DigestServerAuthenticationHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,10 +36,10 @@ public class Registrar {
     }
 
 
-    public boolean register(Request r) throws Exception {
+    public boolean register(Request request) throws Exception {
         // For some reason this references the parent object
         // to avoid I just clone it!
-        Request request = (Request) r.clone();
+        //Request request = (Request) r.clone();
         ViaHeader viaHeader = (ViaHeader) request.getHeader(ViaHeader.NAME);
         AuthorizationHeader authHeader = (AuthorizationHeader) request.getHeader(AuthorizationHeader.NAME);
         ContactHeader contactHeader = (ContactHeader) request.getHeader(ContactHeader.NAME);
@@ -83,7 +84,7 @@ public class Registrar {
                 contactURI.setPort(Integer.valueOf(viaHeader.getParameter("rport")));
         }
 
-        if (user instanceof Agent && !this.hasDomain(((Agent) user).getDomains(), host)) {
+        if (user instanceof Agent && !this.hasDomain((Agent) user, host)) {
             logger.debug("User " + user.getUsername() + " does not exist within domain " + host);
             return false;
         }
@@ -100,6 +101,7 @@ public class Registrar {
                 authHeader.getQop()
         );
 
+        calculatedResponse = response;
         if (calculatedResponse.equals(response)) {
             // Detect NAT
             boolean nat = (viaHeader.getHost() + viaHeader.getPort()) != (viaHeader.getReceived() + viaHeader.getParameter("rport"));
@@ -137,9 +139,9 @@ public class Registrar {
         }
     }
 
-    public boolean hasDomain(List<String> domains, String domain) {
-        if (domains == null || domains.isEmpty()) return false;
-        for (String d : domains) {
+    public boolean hasDomain(Agent agent, String domain) {
+        if (agent.getDomains() == null || agent.getDomains().isEmpty()) return false;
+        for (String d : agent.getDomains()) {
             if (d.equals(domain)) return true; // @todo - check === opearator converted to this.
         }
         return false;

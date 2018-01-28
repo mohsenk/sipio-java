@@ -15,8 +15,8 @@
   spec:
     credentials:
       username: hasan
-      secret: '1234'
-    domains: [192.168.1.3]
+      secret: '123456'
+    domains: [192.168.1.188]
 - kind: Agent
   apiVersion: v1draft1
   metadata:
@@ -24,5 +24,5 @@
   spec:
     credentials:
       username: mamad
-      secret: '1234'
-    domains: [192.168.1.3]
+      secret: '123456'
+    domains: [192.168.1.188]

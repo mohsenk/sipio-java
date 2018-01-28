@@ -1,7 +1,5 @@
 package com.fonoster.sipio.utils;
 
-import com.fonoster.sipio.core.model.Config;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.net.util.SubnetUtils;
 
 public class IPUtil {

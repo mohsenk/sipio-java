@@ -23,6 +23,7 @@ public class AccountManagerService implements AccountManager {
 
     @Override
     public UserCredentials getCredentials(ClientTransaction challengedTransaction, String realm) {
+
         return new UserCredentials() {
             @Override
             public String getUserName() {

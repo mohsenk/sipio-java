@@ -1,11 +1,14 @@
 package com.fonoster.sipio.location;
 
-import com.fonoster.sipio.core.model.*;
-import com.fonoster.sipio.repository.*;
+import com.fonoster.sipio.core.model.DID;
+import com.fonoster.sipio.core.model.Domain;
+import com.fonoster.sipio.core.model.Gateway;
+import com.fonoster.sipio.core.model.Route;
+import com.fonoster.sipio.repository.DIDsRepository;
+import com.fonoster.sipio.repository.DomainRepository;
+import com.fonoster.sipio.repository.GateWayRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-
 import javax.sip.PeerUnavailableException;
 import javax.sip.SipFactory;
 import javax.sip.address.AddressFactory;
@@ -15,10 +18,7 @@ import javax.sip.address.URI;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.Period;
-import java.time.temporal.TemporalUnit;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class Locator {
@@ -36,7 +36,7 @@ public class Locator {
     }
 
     public Locator() throws PeerUnavailableException {
-        this(0);
+        this(1);
     }
 
 
@@ -69,7 +69,7 @@ public class Locator {
         Object routes;
 
         // ThruGw is not available in db. We obtain that from api
-        if (result != null && !((Route) result).isThruGw()) {
+        if (result != null && result instanceof Route && !((Route) result).isThruGw()) {
             routes = result;
         } else {
             routes = new HashMap();

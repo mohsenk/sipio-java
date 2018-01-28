@@ -1,12 +1,11 @@
 package com.fonoster.sipio.core.acl;
 
 import com.fonoster.sipio.core.model.Domain;
-import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static jdk.nashorn.internal.objects.Global.undefined;
 
 public class ACLUtil {
 
@@ -19,14 +18,12 @@ public class ACLUtil {
         this.generalDeny = generalDeny;
     }
 
-    public void addRules(Set<String> allow, Set<String> deny) throws Exception {
-        if (deny.isEmpty() && deny.isEmpty())
+    private void addRules(Set<String> allow, Set<String> deny) throws Exception {
+        if (deny.isEmpty())
             return;
 
-        if (!deny.isEmpty()) {
-            for (String item : deny) {
-                this.rules.add(new ACLRule("deny", item));
-            }
+        for (String item : deny) {
+            this.rules.add(new ACLRule("deny", item));
         }
 
         if (!allow.isEmpty()) {
@@ -40,7 +37,7 @@ public class ACLUtil {
         if (domain == null) return false;
 
         // Is important to reset this every time
-        this.rules = new java.util.ArrayList();
+        this.rules = new ArrayList();
 
         if (generalAllow != null && generalDeny != null)
             this.addRules(generalAllow,generalDeny);

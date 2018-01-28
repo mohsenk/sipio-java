@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.ValidationMessage;
@@ -14,7 +15,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -45,55 +45,10 @@ public class ResourceUtil {
         return this.mapper.writeValueAsString(obj);
     }
 
-    public boolean isJson(String str) {
-        try {
-            return true;
-        } catch (Exception ex) {
-            return false;
-        }
-    }
-
     public JsonElement getJson(String yamlFile) throws IOException {
-        //return new org.().parse(getJsonString(yamlFile));
-        return new com.google.gson.JsonParser().parse(getJsonString(yamlFile));
+
+        return new JsonParser().parse(getJsonString(yamlFile));
     }
-
-
-
-//    public void getObjs(String resourcePath, String f) throws IOException {
-//        String filter = "*";
-//
-//        if (!StringUtils.isEmpty(f) && f != "*") {
-//            filter = "*.[?(" + f + ")]";
-//        }
-//
-//        String resource = this.getJsonString(resourcePath);
-//        let list
-//        try {
-//            // Convert this from net.minidev.json.JSONArray
-//            // to Javascript Object
-//            list = JSON.parse(JsonPath.parse(resource).read(filter).toJSONString())
-//
-//            if (list.length == 0) {
-//                return {
-//                        status:Status.NOT_FOUND,
-//                        message:Status.message[Status.NOT_FOUND].value
-//                }
-//            }
-//        } catch (e) {
-//            return {
-//                    status:Status.BAD_REQUEST,
-//                    message:e.getMessage()
-//            }
-//        }
-//
-//        return {
-//                status:Status.OK,
-//                message:Status.message[Status.OK].value,
-//                obj:list
-//        }
-//    }
-
 
     public boolean isResourceValid(String schemaPath, String nodePath) throws Exception {
         JsonSchema schema = this.factory.getSchema(this.readFile(schemaPath));

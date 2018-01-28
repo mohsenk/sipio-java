@@ -47,7 +47,7 @@ public class AuthHelper {
     }
 
 
-    public WWWAuthenticateHeader generateChallenge() throws ParseException, NoSuchAlgorithmException {
+    public WWWAuthenticateHeader generateChallenge(HeaderFactory headerFactory) throws ParseException, NoSuchAlgorithmException {
         WWWAuthenticateHeader wwwAuthHeader = headerFactory.createWWWAuthenticateHeader("Digest");
         wwwAuthHeader.setDomain(domain);
         wwwAuthHeader.setRealm(realm);
@@ -60,11 +60,15 @@ public class AuthHelper {
         return wwwAuthHeader;
     }
 
+    public WWWAuthenticateHeader generateChallenge() throws ParseException, NoSuchAlgorithmException {
+        return generateChallenge(headerFactory);
+    }
+
     public String generateNonce() throws NoSuchAlgorithmException {
         LocalDateTime date = LocalDateTime.now();
         LocalTime time = date.toLocalTime();
         long pad = new Random().nextLong();
-        String nonceString = (new Long(time.getSecond())).toString() + new Long(pad).toString();
+        String nonceString = (new Long(time.getSecond())).toString() + Long.toString(pad);
         MessageDigest messageDigest = MessageDigest.getInstance(DEFAULT_ALGORITHM);
         byte[] mdBytes = messageDigest.digest(nonceString.getBytes());
         return DigestUtils.md5Hex(mdBytes);

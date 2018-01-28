@@ -92,7 +92,7 @@ public class RequestProcessor {
             String remoteIp = event.getRemoteIpAddress();
             RouteInfo routeInfo = new RouteInfo(requestIn);
 
-            logger.debug("routing type -> " + routeInfo.getRoutingType());
+            logger.info("routing type -> " + routeInfo.getRoutingType());
 
             // 1. Security check
             // This routing type is not yet supported
@@ -362,6 +362,12 @@ public class RequestProcessor {
         return user != null;
     }
 
+
+    /**
+     * Discover DIDs sent via a non-standard header
+     * The header must be added at config.spec.addressInfo[*]
+     * If the such header is present then overwrite the AOR
+     */
     public URI getAOR(Request request) {
         ToHeader toHeader = (ToHeader) request.getHeader(ToHeader.NAME);
 

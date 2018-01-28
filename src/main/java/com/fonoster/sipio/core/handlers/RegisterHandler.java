@@ -5,6 +5,7 @@ import com.fonoster.sipio.registrar.Registrar;
 import com.fonoster.sipio.utils.AuthHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import javax.sip.*;
 import javax.sip.address.URI;
 import javax.sip.header.*;
@@ -70,20 +71,22 @@ public class RegisterHandler {
             unauthorized.addHeader(this.authHelper.generateChallenge());
             transaction.sendResponse(unauthorized);
             logger.debug(unauthorized);
-        } else {
-            if (this.registrar.register(request)) {
-                Response ok = this.messageFactory.createResponse(Response.OK, request);
-                ok.addHeader(contactHeader);
-                ok.addHeader(expH);
-                transaction.sendResponse(ok);
-                logger.debug(ok);
-            } else {
-                Response unauthorized = this.messageFactory.createResponse(Response.UNAUTHORIZED, request);
-                unauthorized.addHeader(this.authHelper.generateChallenge());
-                transaction.sendResponse(unauthorized);
-                logger.debug(unauthorized);
-            }
+            return;
         }
+
+        if (this.registrar.register(request)) {
+            Response ok = this.messageFactory.createResponse(Response.OK, request);
+            ok.addHeader(contactHeader);
+            ok.addHeader(expH);
+            transaction.sendResponse(ok);
+            logger.debug(ok);
+        } else {
+            Response unauthorized = this.messageFactory.createResponse(Response.UNAUTHORIZED, request);
+            unauthorized.addHeader(this.authHelper.generateChallenge(this.headerFactory));
+            transaction.sendResponse(unauthorized);
+            logger.debug(unauthorized);
+        }
+
 
     }
 }

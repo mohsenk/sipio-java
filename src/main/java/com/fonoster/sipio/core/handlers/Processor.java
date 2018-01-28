@@ -17,20 +17,12 @@ public class Processor implements SipListener {
 
     static final Logger logger = LogManager.getLogger(Processor.class);
 
-    private final SipProvider sipProvider;
-    private final Locator locator;
-    private final Registrar registrar;
-    private final Registry registry;
     private final RequestProcessor requestProcessor;
     private final ResponseProcessor responseProcessor;
     private ContextStorage contextStorage;
 
     public Processor(SipProvider sipProvider, Locator locator, Registry registry, Registrar registrar, ContextStorage contextStorage) throws PeerUnavailableException, NoSuchAlgorithmException {
-        this.sipProvider = sipProvider;
-        this.locator = locator;
         this.contextStorage = contextStorage;
-        this.registrar = registrar;
-        this.registry = registry;
         this.requestProcessor = new RequestProcessor(sipProvider, locator, registry, registrar, contextStorage);
         this.responseProcessor = new ResponseProcessor(sipProvider, locator, registry, registrar, contextStorage);
     }
@@ -51,11 +43,7 @@ public class Processor implements SipListener {
         logger.info("Process Response {}",responseEvent.getResponse().getContent());
         try {
             responseProcessor.process(responseEvent);
-        } catch (SipException e) {
-            e.printStackTrace();
-        } catch (InvalidArgumentException e) {
-            e.printStackTrace();
-        } catch (UnknownHostException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

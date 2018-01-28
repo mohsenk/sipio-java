@@ -1,0 +1,28 @@
+apiVersion: v1draft1
+metadata:
+  userAgent: Sip I/O v1.0
+spec:
+  securityContext:
+    keyStore: etc/certs/keystore.jks
+    trustStore: etc/certs/keystore.jks
+    keyStorePassword: 'password'
+    keyStoreType: 'jks'
+    debugging: false
+  transport:
+    - protocol: udp
+      port: 5060
+    - protocol: tcp
+      port: 5060
+    - protocol: tls
+      port: 5061
+    - protocol: ws
+      port: 5082
+    - protocol: wss
+      port: 5083
+  services:
+    rest:
+      credentials:
+        username: rest
+        secret: 'KN4k^^f%M]e66f~^'
+  logging:
+    traceLevel: 0

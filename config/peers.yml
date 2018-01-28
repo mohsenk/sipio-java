@@ -1,0 +1,18 @@
+# Peers and Agents can register in Sip I/O location service
+- apiVersion: v1draft1
+  kind: Peer
+  metadata:
+    name: mohsen
+  spec:
+    credentials:
+      username: test1
+      secret: '1234'
+- apiVersion: v1draft1
+  kind: Peer
+  metadata:
+    name: mamad
+  spec:
+    credentials:
+      username: test2
+      secret: '1234'
+

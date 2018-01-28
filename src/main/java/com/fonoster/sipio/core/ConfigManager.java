@@ -38,7 +38,32 @@ public class ConfigManager {
         peers = new ArrayList<>();
         dids = new ArrayList<>();
 
-        agents.add(new Agent("Mohsen Karimi","mohsen","123456", Arrays.asList("192.168.1.188")));
+        JsonElement agentsJson = new ResourceUtil().getJson("config/agents.yml");
+        for (JsonElement agentJson : agentsJson.getAsJsonArray()) {
+            agents.add(new Agent(agentJson.getAsJsonObject()));
+        }
+
+        JsonElement peersJson = new ResourceUtil().getJson("config/peers.yml");
+        for (JsonElement peerJson : peersJson.getAsJsonArray()) {
+            peers.add(new Peer(peerJson.getAsJsonObject()));
+        }
+
+        JsonElement domainsJson = new ResourceUtil().getJson("config/domains.yml");
+        for (JsonElement domainJson : domainsJson.getAsJsonArray()) {
+            domains.add(new Domain(domainJson.getAsJsonObject()));
+        }
+
+        JsonElement gatewaysJson = new ResourceUtil().getJson("config/gateways.yml");
+        for (JsonElement gatewayJson : gatewaysJson.getAsJsonArray()) {
+            gateways.add(new Gateway(gatewayJson.getAsJsonObject()));
+        }
+
+        JsonElement didsJson = new ResourceUtil().getJson("config/dids.yml");
+        for (JsonElement didJson : didsJson.getAsJsonArray()) {
+            dids.add(new DID(didJson.getAsJsonObject()));
+        }
+
+
     }
 
     public static List<DID> getDIDs() {

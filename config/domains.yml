@@ -4,7 +4,7 @@
     name: Ocean Central Office
   spec:
     context:
-      domainUri: 192.168.1.103
+      domainUri: 192.168.1.188
       egressPolicy:
         rule: .*        # See the Location Service Rules for information about this parameter
         didRef: DID0001

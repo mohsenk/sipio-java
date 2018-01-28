@@ -41,7 +41,7 @@ public class ResourceUtil {
 
     public String getJsonString(String yamlFile) throws IOException {
         String yaml = this.readFile(yamlFile);
-        HashMap obj = this.yamlReader.readValue(yaml, HashMap.class);
+        Object obj = this.yamlReader.readValue(yaml, Object.class);
         return this.mapper.writeValueAsString(obj);
     }
 

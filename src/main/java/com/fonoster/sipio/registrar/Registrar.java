@@ -100,7 +100,7 @@ public class Registrar {
                 authHeader.getQop()
         );
 
-        if (!calculatedResponse.equals(response)) {
+        if (calculatedResponse.equals(response)) {
             // Detect NAT
             boolean nat = (viaHeader.getHost() + viaHeader.getPort()) != (viaHeader.getReceived() + viaHeader.getParameter("rport"));
 

@@ -1,5 +1,7 @@
 package com.fonoster.sipio.core.model;
 
+import com.google.gson.JsonObject;
+
 public class Peer extends User {
     String name;
     String device;
@@ -7,12 +9,17 @@ public class Peer extends User {
     String secret;
     String contactAddr;
 
-    public Peer(String name, String device, String username, String secret, String contactAddr) {
-        this.name = name;
-        this.device = device;
-        this.username = username;
-        this.secret = secret;
-        this.contactAddr = contactAddr;
+    public Peer(JsonObject json) {
+        JsonObject specJson = json.get("spec").getAsJsonObject();
+        this.name = json.get("metadata").getAsJsonObject().get("name").getAsString();
+        this.secret = specJson.get("credentials").getAsJsonObject().get("secret").getAsString();
+        this.username = specJson.get("credentials").getAsJsonObject().get("username").getAsString();
+        if (specJson.has("device")) {
+            this.device = specJson.get("device").getAsString();
+        }
+        if (specJson.has("contactAddr")) {
+            this.contactAddr = specJson.get("contactAddr").getAsString();
+        }
     }
 
     @Override

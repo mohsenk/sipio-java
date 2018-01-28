@@ -41,7 +41,7 @@ public class Locator {
         this.aorAsString(addressOfRecord);
     }
 
-    private String aorAsString(URI addressOfRecord) throws Exception {
+    private String aorAsString(Object addressOfRecord) throws Exception {
         if (addressOfRecord instanceof javax.sip.address.TelURL) {
             return "tel:" + ((TelURL) addressOfRecord).getPhoneNumber();
         } else if (addressOfRecord instanceof javax.sip.address.SipURI) {
@@ -114,7 +114,7 @@ public class Locator {
                 }
             } catch (Exception e) {
                 // Ignore error
-                logger.error(e);
+                logger.error("",e);
             }
 
             // Endpoint can only be reach thru a gateway
@@ -175,7 +175,7 @@ public class Locator {
                                 route.setGwRef(gwRef);
                                 route.setGwHost(gwHost);
                                 route.setDidRef(did.getRef());
-                                route.setDID(did.getTelUrl().toString().split(":")[0]);
+                                route.setDID(did.getTelUrl().split(":")[0]);
                                 route.setContactURI(contactURI);
                                 return route;
                             }
@@ -201,7 +201,7 @@ public class Locator {
                 route.setLinkAOR(false);
                 route.setGwUsername(gateway.getUserName());
                 route.setGwRef(gateway.getRef());
-                route.setDID(did.getTelUrl().toString().split(":")[1]);
+                route.setDID(did.getTelUrl().split(":")[1]);
                 route.setContactURI(contactURI);
                 return route;
             }

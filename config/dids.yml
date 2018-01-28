@@ -11,6 +11,7 @@
     location:
       telUrl: 'tel:17066041487'
       aorLink: 'sip:janie@sip.ocean.com'
+
 - apiVersion: v1draft1
   kind: DID
   metadata:

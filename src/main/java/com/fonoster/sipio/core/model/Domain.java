@@ -1,7 +1,11 @@
 package com.fonoster.sipio.core.model;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -12,8 +16,30 @@ public class Domain {
     String rule;
     String didRef;
 
-    Set<String> allow;
-    Set<String> deny;
+    Set<String> allow = new HashSet<>();
+    Set<String> deny = new HashSet<>();
+
+    public Domain(JsonObject json) {
+        JsonObject specJson = json.get("spec").getAsJsonObject();
+        JsonObject contextJson = specJson.get("context").getAsJsonObject();
+        this.name = json.get("metadata").getAsJsonObject().get("name").getAsString();
+        this.domainUri = contextJson.get("domainUri").getAsString();
+        if (contextJson.has("egressPolicy")) {
+            this.rule = contextJson.get("egressPolicy").getAsJsonObject().get("rule").getAsString();
+            this.didRef = contextJson.get("egressPolicy").getAsJsonObject().get("didRef").getAsString();
+        }
+        if (contextJson.has("accessControlList")) {
+            JsonArray allowsJson = contextJson.get("accessControlList").getAsJsonObject().get("allow").getAsJsonArray();
+            for (JsonElement allowJson : allowsJson) {
+                this.allow.add(allowJson.getAsString());
+            }
+
+            JsonArray denysJson = contextJson.get("accessControlList").getAsJsonObject().get("deny").getAsJsonArray();
+            for (JsonElement denyJson : denysJson) {
+                this.deny.add(denyJson.getAsString());
+            }
+        }
+    }
 
     public Set<String> getAllow() {
         return allow;

@@ -1,5 +1,8 @@
 package com.fonoster.sipio.core.model;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import javax.sip.address.TelURL;
 import javax.sip.address.URI;
 
@@ -9,8 +12,22 @@ public class DID {
     String city;
     String country;
     String countryISOCode;
-    TelURL telUrl;
-    URI aorLink;
+    String telUrl;
+    String aorLink;
+
+    public DID(JsonObject json) {
+        JsonObject geoInfoJson = json.get("metadata").getAsJsonObject().get("geoInfo").getAsJsonObject();
+        JsonObject specJson = json.get("spec").getAsJsonObject();
+        this.ref = json.get("metadata").getAsJsonObject().get("ref").getAsString();
+        this.gwRef = json.get("metadata").getAsJsonObject().get("gwRef").getAsString();
+        this.city = geoInfoJson.get("city").getAsString();
+        this.country = geoInfoJson.get("country").getAsString();
+        this.countryISOCode = geoInfoJson.get("countryISOCode").getAsString();
+
+        this.telUrl = specJson.get("location").getAsJsonObject().get("telUrl").getAsString();
+        this.aorLink = specJson.get("location").getAsJsonObject().get("aorLink").getAsString();
+    }
+
 
     public String getRef() {
         return ref;
@@ -52,19 +69,19 @@ public class DID {
         this.countryISOCode = countryISOCode;
     }
 
-    public TelURL getTelUrl() {
+    public String getTelUrl() {
         return telUrl;
     }
 
-    public void setTelUrl(TelURL telUrl) {
+    public void setTelUrl(String telUrl) {
         this.telUrl = telUrl;
     }
 
-    public URI getAorLink() {
+    public String getAorLink() {
         return aorLink;
     }
 
-    public void setAorLink(URI aorLink) {
+    public void setAorLink(String aorLink) {
         this.aorLink = aorLink;
     }
 }

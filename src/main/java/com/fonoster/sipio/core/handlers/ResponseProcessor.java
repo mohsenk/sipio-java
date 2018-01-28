@@ -92,7 +92,7 @@ public class ResponseProcessor {
                 responseIn.getStatusCode() == Response.UNAUTHORIZED) {
             SipStackImpl sipStack = (SipStackImpl) this.sipProvider.getSipStack();
 
-            AuthenticationHelper authenticationHelper = sipStack.getAuthenticationHelper(this.accountManagerService.getAccountManager(), this.headerFactory);
+            AuthenticationHelper authenticationHelper = sipStack.getAuthenticationHelper(this.accountManagerService, this.headerFactory);
             ClientTransaction t = authenticationHelper.handleChallenge(responseIn, clientTransaction, (SipProvider) event.getSource(), 5);
             t.sendRequest();
             logger.debug(responseIn);

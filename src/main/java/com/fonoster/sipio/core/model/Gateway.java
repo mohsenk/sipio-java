@@ -1,5 +1,12 @@
 package com.fonoster.sipio.core.model;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class Gateway {
     String name;
     String ref;
@@ -7,6 +14,24 @@ public class Gateway {
     String userName;
     String secret;
     String transport;
+    List<String> registries = new ArrayList<>();
+
+    public Gateway(JsonObject json) {
+        this.name = json.get("metadata").getAsJsonObject().get("name").getAsString();
+        this.ref = json.get("metadata").getAsJsonObject().get("ref").getAsString();
+        JsonObject specJson = json.get("spec").getAsJsonObject();
+        JsonObject regServiceJson = specJson.get("regService").getAsJsonObject();
+        this.host = regServiceJson.get("host").getAsString();
+        this.userName = regServiceJson.get("credentials").getAsJsonObject().get("username").getAsString();
+        this.secret = regServiceJson.get("credentials").getAsJsonObject().get("secret").getAsString();
+        this.transport = regServiceJson.get("transport").getAsString();
+        if (regServiceJson.has("registries")) {
+            JsonArray registriesArray = regServiceJson.get("registries").getAsJsonArray();
+            for (JsonElement registryJson : registriesArray) {
+                this.registries.add(registryJson.getAsString());
+            }
+        }
+    }
 
     public String getName() {
         return name;

@@ -13,11 +13,9 @@ import org.springframework.context.ConfigurableApplicationContext;
 public class Application {
 
     public static void main(String[] args) throws Exception {
+        ConfigManager.load();
         ConfigurableApplicationContext context = SpringApplication.run(Application.class, args);
         Locator locator = context.getBean(Locator.class);
-
-        ConfigManager.load();
-
         Registrar registrar = new Registrar(locator);
         new Server(locator, registrar, new ContextStorage()).start();
 

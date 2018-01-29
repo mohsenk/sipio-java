@@ -1,4 +1,4 @@
-package com.fonoster.sipio.controllers;
+package com.fonoster.sipio.rest.controllers;
 
 
 import com.fonoster.sipio.location.Locator;

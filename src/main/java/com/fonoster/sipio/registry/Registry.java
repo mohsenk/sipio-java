@@ -9,6 +9,7 @@ import com.google.gson.JsonObject;
 import gov.nist.javax.sip.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.stereotype.Component;
 
 import javax.sip.*;
 import javax.sip.address.Address;
@@ -150,25 +151,13 @@ public class Registry {
         return false;
     }
 
-    public String listAsJSON() {
-        List<RegistryModel> s = new ArrayList<>();
-        Iterator<RegistryModel> iterator = this.registry.values().iterator();
-        while (iterator.hasNext()) {
-            RegistryModel reg = iterator.next();
-            s.add(reg);
-        }
-        return new Gson().toJson(s).toString();
-    }
 
     public boolean isExpired(String host) {
         RegistryModel reg = registry.get(host);
         if (reg == null) return true;
 
         long elapsed = Duration.between(LocalDateTime.now(), reg.getRegisteredOn()).getSeconds();
-        if ((reg.getExpires() - elapsed) <= 0) {
-            return true;
-        }
-        return false;
+        return (reg.getExpires() - elapsed) <= 0;
     }
 
     public void start() {

@@ -32,7 +32,7 @@ public class RequestProcessor {
 
     private final RegisterHandler registerHandler;
     private final CancelHandler cancelHandler;
-    private final IPUtil ipUtil;
+
     private final DigestServerAuthenticationHelper dsam;
     private final Config config;
     private final Object generalACL;
@@ -61,7 +61,7 @@ public class RequestProcessor {
         this.generalACL = null; // @todo fix this
         this.registerHandler = new RegisterHandler(locator, registrar);
         this.cancelHandler = new CancelHandler(sipProvider, contextStorage);
-        this.ipUtil = new IPUtil();
+
 
     }
 
@@ -216,7 +216,7 @@ public class RequestProcessor {
         String advertisedAddr;
         Integer advertisedPort;
 
-        if (this.config.getExternalAddress() != null && !this.ipUtil.isLocalNet(route.getSentByAddress())) {
+        if (this.config.getExternalAddress() != null && !IPUtil.isLocalNet(route.getSentByAddress())) {
             advertisedAddr = this.config.getExternalAddress().contains(":") ? this.config.getExternalAddress().split(":")[0] : this.config.getExternalAddress();
             advertisedPort = this.config.getExternalAddress().contains(":") ? Integer.valueOf(this.config.getExternalAddress().split(":")[1]) : lp.getPort();
         } else {

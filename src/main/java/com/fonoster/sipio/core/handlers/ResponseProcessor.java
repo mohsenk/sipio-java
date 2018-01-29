@@ -5,7 +5,7 @@ import com.fonoster.sipio.core.Context;
 import com.fonoster.sipio.core.ContextStorage;
 import com.fonoster.sipio.location.Locator;
 import com.fonoster.sipio.registrar.Registrar;
-import com.fonoster.sipio.registry.Registry;
+import com.fonoster.sipio.registry.GatewayConnector;
 import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.clientauthutils.AuthenticationHelper;
 import org.apache.logging.log4j.LogManager;
@@ -24,12 +24,12 @@ public class ResponseProcessor {
 
     private AccountManagerService accountManagerService;
     private SipProvider sipProvider;
-    private Registry registry;
+    private GatewayConnector gatewayConnector;
     private ContextStorage contextStorage;
 
-    public ResponseProcessor(SipProvider sipProvider, Locator locator, Registry registry, Registrar registrar, ContextStorage contextStorage) throws PeerUnavailableException {
+    public ResponseProcessor(SipProvider sipProvider, Locator locator, GatewayConnector gatewayConnector, Registrar registrar, ContextStorage contextStorage) throws PeerUnavailableException {
         this.sipProvider = sipProvider;
-        this.registry = registry;
+        this.gatewayConnector = gatewayConnector;
         this.contextStorage = contextStorage;
         this.headerFactory = SipFactory.getInstance().createHeaderFactory();
         this.accountManagerService = new AccountManagerService();
@@ -70,7 +70,7 @@ public class ResponseProcessor {
 
                 logger.debug("Sip I/O is behind a NAT. Re-registering using Received and RPort");
                 try {
-                    this.registry.requestChallenge(username, gwRef, peerHost, transport, received, rPort);
+                    this.gatewayConnector.requestChallenge(username, gwRef, peerHost, transport, received, rPort);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -81,9 +81,9 @@ public class ResponseProcessor {
             if(expiresHeader != null) {
                 expires = expiresHeader.getExpires();
             }
-            this.registry.storeRegistry(fromURI.getUser(), fromURI.getHost(), expires);
+            this.gatewayConnector.storeRegistry(fromURI.getUser(), fromURI.getHost(), expires);
         } else if(cseq.getMethod().equals(Request.REGISTER)) {
-            this.registry.removeRegistry(fromURI.getHost());
+            this.gatewayConnector.removeRegistry(fromURI.getHost());
         }
 
         // WARNING: This is causing an issue with tcp transport and DIDLogic

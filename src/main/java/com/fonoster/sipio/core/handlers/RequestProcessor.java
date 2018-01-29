@@ -1,13 +1,12 @@
 package com.fonoster.sipio.core.handlers;
 
 import com.fonoster.sipio.core.*;
-import com.fonoster.sipio.core.acl.ACLUtil;
 import com.fonoster.sipio.core.model.*;
 import com.fonoster.sipio.location.SipClient;
+import com.fonoster.sipio.registry.GatewayConnector;
 import com.fonoster.sipio.repository.*;
 import com.fonoster.sipio.location.Locator;
 import com.fonoster.sipio.registrar.Registrar;
-import com.fonoster.sipio.registry.Registry;
 import com.fonoster.sipio.utils.IPUtil;
 import gov.nist.javax.sip.RequestEventExt;
 import gov.nist.javax.sip.clientauthutils.DigestServerAuthenticationHelper;
@@ -40,19 +39,19 @@ public class RequestProcessor {
     SipStack sipStack;
     ContextStorage contextStorage;
     Locator locator;
-    Registry registry;
+    GatewayConnector gatewayConnector;
     MessageFactory messageFactory;
     HeaderFactory headerFactory;
     AddressFactory addressFactory;
 
     static final Logger logger = LogManager.getLogger(RequestProcessor.class);
 
-    public RequestProcessor(SipProvider sipProvider, Locator locator, Registry registry, Registrar registrar, ContextStorage contextStorage) throws PeerUnavailableException, NoSuchAlgorithmException {
+    public RequestProcessor(SipProvider sipProvider, Locator locator, GatewayConnector gatewayConnector, Registrar registrar, ContextStorage contextStorage) throws PeerUnavailableException, NoSuchAlgorithmException {
         this.sipProvider = sipProvider;
         this.sipStack = sipProvider.getSipStack();
         this.contextStorage = contextStorage;
         this.locator = locator;
-        this.registry = registry;
+        this.gatewayConnector = gatewayConnector;
         this.messageFactory = SipFactory.getInstance().createMessageFactory();
         this.headerFactory = SipFactory.getInstance().createHeaderFactory();
         this.addressFactory = SipFactory.getInstance().createAddressFactory();
@@ -117,7 +116,7 @@ public class RequestProcessor {
                 return;
             }
         } else {
-            if (!this.registry.hasIp(remoteIp)) {
+            if (!this.gatewayConnector.hasIp(remoteIp)) {
                 serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
                 logger.debug(requestIn);
                 return;

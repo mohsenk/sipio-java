@@ -6,6 +6,7 @@ import gov.nist.javax.sip.clientauthutils.AccountManager;
 import gov.nist.javax.sip.clientauthutils.UserCredentials;
 
 import javax.sip.ClientTransaction;
+import javax.sip.header.ExtensionHeader;
 
 public class AccountManagerService implements AccountManager {
 
@@ -15,7 +16,7 @@ public class AccountManagerService implements AccountManager {
     }
 
     private Gateway getGateway(ClientTransaction ct) {
-        String gwRef = ct.getRequest().getHeader("GwRef").toString();
+        String gwRef = ((ExtensionHeader)ct.getRequest().getHeader("GwRef")).getValue();
         Gateway gateway = GateWayRepository.getGateway(gwRef);
         return gateway;
     }

@@ -4,7 +4,7 @@ import com.fonoster.sipio.core.model.Config;
 import com.fonoster.sipio.core.handlers.Processor;
 import com.fonoster.sipio.location.Locator;
 import com.fonoster.sipio.registrar.Registrar;
-import com.fonoster.sipio.registry.Registry;
+import com.fonoster.sipio.registry.GatewayConnector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -102,13 +102,13 @@ public class Server {
                     + ANSI_RESET);
         }
 
-        Registry registry = new Registry(sipProvider);
-        Processor processor = new Processor(sipProvider, locator, registry, registrar, contextStorage);
+        GatewayConnector gatewayConnector = new GatewayConnector(sipProvider);
+        Processor processor = new Processor(sipProvider, locator, gatewayConnector, registrar, contextStorage);
 
         sipProvider.addSipListener(processor);
 
         locator.start();
-        registry.start();
+        gatewayConnector.start();
 
 
     }

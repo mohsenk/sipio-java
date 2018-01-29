@@ -4,12 +4,9 @@ import com.fonoster.sipio.core.ConfigManager;
 import com.fonoster.sipio.core.model.Config;
 import com.fonoster.sipio.core.model.Gateway;
 import com.fonoster.sipio.repository.GateWayRepository;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import gov.nist.javax.sip.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.stereotype.Component;
 
 import javax.sip.*;
 import javax.sip.address.Address;
@@ -25,8 +22,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 
-public class Registry {
-    static final Logger logger = LogManager.getLogger(Registry.class);
+public class GatewayConnector {
+    static final Logger logger = LogManager.getLogger(GatewayConnector.class);
     private final Integer checkExpiresTime;
     private final Integer expires;
     private final SipProvider sipProvider;
@@ -35,10 +32,10 @@ public class Registry {
     private final MessageFactory messageFactory;
     private final AddressFactory addressFactory;
     private final ArrayList userAgent;
-    private final HashMap<String, RegistryModel> registry;
+    private final HashMap<String, GatewayConnection> registry;
     int cseq = 0;
 
-    public Registry(SipProvider sipProvider, Integer expires, Integer checkExpiresTime) throws PeerUnavailableException {
+    public GatewayConnector(SipProvider sipProvider, Integer expires, Integer checkExpiresTime) throws PeerUnavailableException {
         this.expires = expires;
         this.checkExpiresTime = checkExpiresTime;
         this.sipProvider = sipProvider;
@@ -51,7 +48,7 @@ public class Registry {
         this.registry = new HashMap();
     }
 
-    public Registry(SipProvider sipProvider) throws PeerUnavailableException {
+    public GatewayConnector(SipProvider sipProvider) throws PeerUnavailableException {
         this(sipProvider, 300, 1);
     }
 
@@ -129,7 +126,7 @@ public class Registry {
     public void storeRegistry(String username, String host, Integer expires) throws UnknownHostException {
         // Re-register before actual time expiration
         int actualExpires = (int) (expires - 2 * 60 * this.checkExpiresTime);
-        RegistryModel reg = new RegistryModel(username, host, InetAddress.getByName(host).getHostAddress(), actualExpires);
+        GatewayConnection reg = new GatewayConnection(username, host, InetAddress.getByName(host).getHostAddress(), actualExpires);
         this.registry.put(host, reg);
     }
 
@@ -142,10 +139,10 @@ public class Registry {
     }
 
     public boolean hasIp(String ip) {
-        Iterator<RegistryModel> iterator = this.registry.values().iterator();
+        Iterator<GatewayConnection> iterator = this.registry.values().iterator();
 
         while (iterator.hasNext()) {
-            RegistryModel reg = iterator.next();
+            GatewayConnection reg = iterator.next();
             if (reg.getIp().equals(ip)) return true;
         }
         return false;
@@ -153,7 +150,7 @@ public class Registry {
 
 
     public boolean isExpired(String host) {
-        RegistryModel reg = registry.get(host);
+        GatewayConnection reg = registry.get(host);
         if (reg == null) return true;
 
         long elapsed = Duration.between(LocalDateTime.now(), reg.getRegisteredOn()).getSeconds();
@@ -161,10 +158,10 @@ public class Registry {
     }
 
     public void start() {
-        logger.info("Starting Registry service");
-        HashMap<String, RegistryModel> registry = this.registry;
+        logger.info("Starting GatewayConnector service");
+        HashMap<String, GatewayConnection> registry = this.registry;
 
-        final Registry myRegistry = this;
+        final GatewayConnector myGatewayConnector = this;
         TimerTask registerTask = new TimerTask() {
             @Override
             public void run() {
@@ -176,7 +173,7 @@ public class Registry {
                                 + gateway.getUserName() + "@" + gateway.getHost());
 
                         try {
-                            myRegistry.requestChallenge(gateway.getUserName(),
+                            myGatewayConnector.requestChallenge(gateway.getUserName(),
                                     gateway.getRef(), gateway.getHost(), gateway.getTransport(), null, null);
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -189,7 +186,7 @@ public class Registry {
                                 if (isExpired(gateway.getHost())) {
                                     logger.debug("Register with " + gateway.getName() + " using " + gateway.getUserName() + "@" + registry);
                                     try {
-                                        myRegistry.requestChallenge(gateway.getUserName(), gateway.getRef(), registry, gateway.getTransport(), null, null);
+                                        myGatewayConnector.requestChallenge(gateway.getUserName(), gateway.getRef(), registry, gateway.getTransport(), null, null);
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                     }

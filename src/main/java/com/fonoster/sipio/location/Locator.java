@@ -9,6 +9,8 @@ import com.fonoster.sipio.repository.DomainRepository;
 import com.fonoster.sipio.repository.GateWayRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.stereotype.Component;
+
 import javax.sip.PeerUnavailableException;
 import javax.sip.SipFactory;
 import javax.sip.address.AddressFactory;
@@ -21,17 +23,32 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
 
+@Component
 public class Locator {
 
     static final Logger logger = LogManager.getLogger(Locator.class);
     private final AddressFactory addressFactory;
-    private Map<String, Object> db;
+    private List<SipClient> clients;
     private Integer checkExpiresTime;
 
+    public List<SipClient> getClients() {
+        return clients;
+    }
+
+    public List<SipClient> getClient(String aor) {
+        logger.info("Locating user with AOR : {}", aor);
+        List<SipClient> results = new ArrayList<>();
+        for (SipClient client : clients) {
+            if (client.getAor().equals(aor)) {
+                results.add(client);
+            }
+        }
+        return results;
+    }
 
     public Locator(Integer checkExpiresTime) throws PeerUnavailableException {
         this.checkExpiresTime = checkExpiresTime;
-        this.db = new HashMap();
+        this.clients = new ArrayList<>();
         this.addressFactory = SipFactory.getInstance().createAddressFactory();
     }
 
@@ -64,31 +81,29 @@ public class Locator {
     }
 
     public void addEndpoint(URI addressOfRecord, Route route) throws Exception {
-        Object result = this.findEndpoint(addressOfRecord);
+        List<SipClient> result = this.findEndpoint(addressOfRecord);
 
-        Object routes;
-
-        // ThruGw is not available in db. We obtain that from api
-        if (result != null && result instanceof Route && !((Route) result).isThruGw()) {
-            routes = result;
-        } else {
-            routes = new HashMap();
-        }
+//        Object routes;
+//
+//        // ThruGw is not available in db. We obtain that from api
+//        if (result != null && result instanceof Route && !((Route) result).isThruGw()) {
+//            routes = result;
+//        } else {
+//            routes = new HashMap();
+//        }
 
         // Not using aorAsString because we need to consider the port, etc.
         String routeKey = route.getContactURI().toString();
-        ((HashMap) routes).put(routeKey, route);
-
         // See NOTE #1
-        this.db.put(this.aorAsString(addressOfRecord), routes);
+        this.clients.add(new SipClient(this.aorAsString(addressOfRecord), routeKey, route));
     }
 
 
-    public Object findEndpoint(URI addressOfRecord) throws Exception {
+    public List<SipClient> findEndpoint(URI addressOfRecord) throws Exception {
         if (addressOfRecord instanceof javax.sip.address.TelURL) {
             DID did = DIDsRepository.getDIDByTelUrl((TelURL) addressOfRecord);
             if (did != null) {
-                Object route = this.db.get(this.aorAsString(did.getAorLink()));
+                List<SipClient> route = getClient(this.aorAsString(did.getAorLink()));
 
                 if (route != null) {
                     return route;
@@ -97,7 +112,7 @@ public class Locator {
         } else if (addressOfRecord instanceof javax.sip.address.SipURI) {
 
             // First just check the db for such addressOfRecord
-            Object routes = this.db.get(this.aorAsString(addressOfRecord));
+            List<SipClient> routes = getClient(this.aorAsString(addressOfRecord));
 
             if (routes != null) {
                 return routes;
@@ -109,7 +124,7 @@ public class Locator {
                 DID did = DIDsRepository.getDIDByTelUrl(telUrl);
 
                 if (did != null) {
-                    Object route = this.db.get(this.aorAsString(did.getAorLink()));
+                    List<SipClient> route = getClient(this.aorAsString(did.getAorLink()));
 
                     if (route != null) {
                         return route;
@@ -122,23 +137,31 @@ public class Locator {
 
             // Endpoint can only be reach thru a gateway
             Route route = this.getEgressRouteForAOR((SipURI) addressOfRecord);
-
-            return route;
+            return Arrays.asList(new SipClient(this.aorAsString(addressOfRecord), "", route));
         }
         return null;
     }
 
     public void removeEndpoint(URI addressOfRecord, URI contactURI) throws Exception {
         String aor = this.aorAsString(addressOfRecord);
+        logger.info("Remove client with URI : {} and URI : {}", addressOfRecord, contactURI);
         // Remove all bindings
         if (contactURI == null) {
-            this.db.remove(aor);
+            for (int i = 0; i < clients.size(); i++) {
+                if (clients.get(i).getId().equals(aor)) {
+                    clients.remove(i);
+                    i--;
+                }
+            }
             return;
         }
         // Not using aorAsString because we need to consider the port, etc.
-        ((HashMap) this.db.get(aor)).remove(contactURI.toString());
-
-        if (((HashMap) this.db.get(aor)).isEmpty()) this.db.remove(aor);
+        for (int i = 0; i < clients.size(); i++) {
+            if (clients.get(i).getId().equals(contactURI.toString())) {
+                clients.remove(i);
+                i--;
+            }
+        }
     }
 
     public Route getEgressRouteForAOR(SipURI addressOfRecord) throws Exception {
@@ -202,31 +225,20 @@ public class Locator {
 
     public void start() {
         logger.info("Starting Location service");
-        Map<String, Object> locDB = this.db;
-
-        TimerTask unbindExpiredTask = new TimerTask() {
+        new java.util.Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-                Iterator e = locDB.values().iterator();
-
-                while (e.hasNext()) {
-                    Map routes = (Map) e.next();
-                    Iterator i = routes.values().iterator();
-
-                    while (i.hasNext()) {
-                        Route route = (Route) i.next();
-                        long elapsed = Duration.between(LocalDateTime.now(), route.getRegisteredOn()).getSeconds();
-                        if ((route.getExpires() - elapsed) <= 0) {
-                            i.remove();
-                            logger.info("Expired user , remove {} from DB", route.getContactURI().toString());
-                        }
-                        if (routes.size() == 0) e.remove();
+                for (int i = 0; i < clients.size(); i++) {
+                    Route route = clients.get(i).getRoute();
+                    long elapsed = Duration.between(LocalDateTime.now(), route.getRegisteredOn()).getSeconds();
+                    if ((route.getExpires() - elapsed) <= 0) {
+                        clients.remove(i);
+                        i--;
+                        logger.info("Expired user , remove {} from DB", route.getContactURI().toString());
                     }
                 }
             }
-        };
-
-        new java.util.Timer().schedule(unbindExpiredTask, 5000, this.checkExpiresTime * 60 * 1000);
+        }, 5000, this.checkExpiresTime * 60 * 1000);
     }
 
     public void stop() {

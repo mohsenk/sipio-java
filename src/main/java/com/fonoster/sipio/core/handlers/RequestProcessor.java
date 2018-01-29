@@ -3,6 +3,7 @@ package com.fonoster.sipio.core.handlers;
 import com.fonoster.sipio.core.*;
 import com.fonoster.sipio.core.acl.ACLUtil;
 import com.fonoster.sipio.core.model.*;
+import com.fonoster.sipio.location.SipClient;
 import com.fonoster.sipio.repository.*;
 import com.fonoster.sipio.location.Locator;
 import com.fonoster.sipio.registrar.Registrar;
@@ -12,6 +13,7 @@ import gov.nist.javax.sip.RequestEventExt;
 import gov.nist.javax.sip.clientauthutils.DigestServerAuthenticationHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import javax.sip.*;
 import javax.sip.address.*;
 import javax.sip.header.*;
@@ -21,10 +23,7 @@ import javax.sip.message.Response;
 
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 import java.util.regex.Pattern;
 
 
@@ -71,12 +70,14 @@ public class RequestProcessor {
         String method = requestIn.getMethod();
         ServerTransaction serverTransaction = event.getServerTransaction();
 
+
+        logger.info("New request received , method : {}", method);
+        logger.info("\n" + requestIn.toString());
         // ACK does not need a transaction
         if (serverTransaction == null && !method.equals(Request.ACK)) {
             serverTransaction = this.sipProvider.getNewServerTransaction(requestIn);
         }
 
-        Request requestOut = (Request) requestIn.clone();
 
         if (method.equals(Request.REGISTER)) {
             // Should we apply ACL rules here too?
@@ -87,127 +88,110 @@ public class RequestProcessor {
             this.cancelHandler.cancel(requestIn, serverTransaction);
             return;
         } else {
-            FromHeader fromHeader = (FromHeader) requestIn.getHeader(FromHeader.NAME);
-            SipURI fromURI = (SipURI) fromHeader.getAddress().getURI();
-            String remoteIp = event.getRemoteIpAddress();
-            RouteInfo routeInfo = new RouteInfo(requestIn);
+            processInvite(event, requestIn, method, serverTransaction);
+        }
+    }
 
-            logger.info("routing type -> " + routeInfo.getRoutingType());
+    public void processInvite(RequestEventExt event, Request requestIn, String method, ServerTransaction serverTransaction) throws Exception {
+        FromHeader fromHeader = (FromHeader) requestIn.getHeader(FromHeader.NAME);
+        SipURI fromURI = (SipURI) fromHeader.getAddress().getURI();
+        String remoteIp = event.getRemoteIpAddress();
+        Request requestOut = (Request) requestIn.clone();
+        RouteInfo routeInfo = new RouteInfo(requestIn);
 
-            // 1. Security check
-            // This routing type is not yet supported
-            if (routeInfo.getRoutingType().equals(RoutingType.INTER_DOMAIN_ROUTING)) {
-                serverTransaction.sendResponse(this.messageFactory.createResponse(Response.FORBIDDEN, requestIn));
+        logger.info("routing type -> " + routeInfo.getRoutingType());
+
+        // 1. Security check
+        // This routing type is not yet supported
+        if (routeInfo.getRoutingType().equals(RoutingType.INTER_DOMAIN_ROUTING)) {
+            serverTransaction.sendResponse(this.messageFactory.createResponse(Response.FORBIDDEN, requestIn));
+            logger.debug(requestIn);
+            return;
+        }
+
+        if (!routeInfo.getRoutingType().equals(RoutingType.DOMAIN_INGRESS_ROUTING)) {
+            // Do not need to authorized ACK messages...
+            if (!method.equals(Request.ACK) && !method.equals(Request.BYE) && !this.authorized(requestIn, serverTransaction)) {
+                serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
                 logger.debug(requestIn);
                 return;
             }
-
-            if (!routeInfo.getRoutingType().equals(RoutingType.DOMAIN_INGRESS_ROUTING)) {
-                // Do not need to authorized ACK messages...
-                if (!method.equals(Request.ACK) && !method.equals(Request.BYE) && !this.authorized(requestIn, serverTransaction)) {
-                    serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
-                    logger.debug(requestIn);
-                    return;
-                }
-            } else {
-                if (!this.registry.hasIp(remoteIp)) {
-                    serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
-                    logger.debug(requestIn);
-                    return;
-                }
-            }
-
-            SipURI addressOfRecord = (SipURI) this.getAOR(requestIn);
-
-            // We only apply ACL rules to Domain Routing.
-            if (routeInfo.getRoutingType().equals(RoutingType.INTRA_DOMAIN_ROUTING)) {
-                Domain result = DomainRepository.getDomain(addressOfRecord.getHost());
-                if (result != null) {
-                    if (!new ACLUtil(new HashSet<>(), new HashSet<>()).isIpAllowed(result, remoteIp)) { // @todo - fix this
-                        serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
-                        logger.debug(requestIn);
-                        return;
-                    }
-                }
-            }
-
-            // 2. Decrement the max forwards value
-            MaxForwardsHeader maxForwardsHeader = (MaxForwardsHeader) requestOut.getHeader(MaxForwardsHeader.NAME);
-            maxForwardsHeader.decrementMaxForwards();
-
-            // 3. Determine route
-            // 3.0 Peer Egress Routing (PR)
-            if (routeInfo.getRoutingType().equals(RoutingType.PEER_EGRESS_ROUTING)) {
-                TelURL telUrl;
-
-                // First look for the header "DIDRef"
-                if (requestOut.getHeader("DIDRef") != null) {
-                    telUrl = this.addressFactory.createTelURL(requestOut.getHeader("DIDRef").toString());
-                } else {
-                    telUrl = this.addressFactory.createTelURL(fromURI.getUser());
-                }
-
-                DID result = DIDsRepository.getDIDByTelUrl(telUrl);
-
-                if (result == null) {
-                    serverTransaction.sendResponse(this.messageFactory.createResponse(Response.TEMPORARILY_UNAVAILABLE, requestIn));
-                    logger.debug(requestIn);
-                    return;
-                }
-
-                String didRef = result.getRef();
-                Route route = this.locator.getEgressRouteForPeer(addressOfRecord, didRef);
-
-                if (route == null) {
-                    serverTransaction.sendResponse(this.messageFactory.createResponse(Response.TEMPORARILY_UNAVAILABLE, requestIn));
-                    logger.debug(requestIn);
-                    return;
-                }
-
-                this.processRoute(requestIn, requestOut, route, serverTransaction);
-
-                logger.debug(requestOut);
+        } else {
+            if (!this.registry.hasIp(remoteIp)) {
+                serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
+                logger.debug(requestIn);
                 return;
             }
+        }
 
-            // 3.1 Intra-Domain Routing(IDR), Domain Ingress Routing (DIR), & Domain Egress Routing (DER)
-            Object location = this.locator.findEndpoint(addressOfRecord);
+        SipURI addressOfRecord = (SipURI) this.getAOR(requestIn);
 
-            if (location == null) {
+        // We only apply ACL rules to Domain Routing.
+        if (routeInfo.getRoutingType().equals(RoutingType.INTRA_DOMAIN_ROUTING)) {
+            Domain result = DomainRepository.getDomain(addressOfRecord.getHost());
+            if (result != null) {
+//                    if (!new ACLUtil(new HashSet<>(), new HashSet<>()).isIpAllowed(result, remoteIp)) { // @todo - fix this
+//                        serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
+//                        logger.debug(requestIn);
+//                        return;
+//                    }
+            }
+        }
+
+        // 2. Decrement the max forwards value
+        MaxForwardsHeader maxForwardsHeader = (MaxForwardsHeader) requestOut.getHeader(MaxForwardsHeader.NAME);
+        maxForwardsHeader.decrementMaxForwards();
+
+        // 3. Determine route
+        // 3.0 Peer Egress Routing (PR)
+        if (routeInfo.getRoutingType().equals(RoutingType.PEER_EGRESS_ROUTING)) {
+            TelURL telUrl;
+
+            // First look for the header "DIDRef"
+            if (requestOut.getHeader("DIDRef") != null) {
+                telUrl = this.addressFactory.createTelURL(requestOut.getHeader("DIDRef").toString());
+            } else {
+                telUrl = this.addressFactory.createTelURL(fromURI.getUser());
+            }
+
+            DID result = DIDsRepository.getDIDByTelUrl(telUrl);
+
+            if (result == null) {
                 serverTransaction.sendResponse(this.messageFactory.createResponse(Response.TEMPORARILY_UNAVAILABLE, requestIn));
                 logger.debug(requestIn);
                 return;
             }
 
+            String didRef = result.getRef();
+            Route route = this.locator.getEgressRouteForPeer(addressOfRecord, didRef);
 
-            if (location instanceof HashMap) {
-                Iterator caIterator = null;
-
-                Collection values = ((HashMap) location).values();
-                try {
-                    caIterator = values.iterator();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                if (!caIterator.hasNext()) {
-                    serverTransaction.sendResponse(this.messageFactory.createResponse(Response.TEMPORARILY_UNAVAILABLE, requestIn));
-                    logger.debug(requestIn);
-                    return;
-                }
-
-                // Fork the call if needed
-                while (caIterator.hasNext()) {
-                    Route route = (Route) caIterator.next();
-                    this.processRoute(requestIn, requestOut, route, serverTransaction);
-                }
-            } else {
-                this.processRoute(requestIn, requestOut, (Route) location, serverTransaction);
+            if (route == null) {
+                serverTransaction.sendResponse(this.messageFactory.createResponse(Response.TEMPORARILY_UNAVAILABLE, requestIn));
+                logger.debug(requestIn);
+                return;
             }
 
+            this.processRoute(requestIn, requestOut, route, serverTransaction);
+
+            logger.debug(requestOut);
             return;
         }
-        //logger.debug(requestIn);
+
+        // 3.1 Intra-Domain Routing(IDR), Domain Ingress Routing (DIR), & Domain Egress Routing (DER)
+        List<SipClient> clients = this.locator.findEndpoint(addressOfRecord);
+
+        if (clients == null || clients.isEmpty()) {
+            serverTransaction.sendResponse(this.messageFactory.createResponse(Response.TEMPORARILY_UNAVAILABLE, requestIn));
+            logger.debug(requestIn);
+            return;
+        }
+
+        for (SipClient client : clients) {
+            logger.info("Send INVITE Request for client : {} ", client.getId());
+            this.processRoute(requestIn, requestOut, client.getRoute(), serverTransaction);
+        }
+
+        return;
     }
 
     public void processRoute(Request requestIn, Request requestOut, Route route, ServerTransaction serverTransaction) throws SipException, InvalidArgumentException, ParseException {
@@ -304,6 +288,7 @@ public class RequestProcessor {
                 // The request must be cloned or the stack will not fork the call
                 ClientTransaction clientTransaction = this.sipProvider.getNewClientTransaction((Request) requestOut.clone());
                 clientTransaction.sendRequest();
+                logger.info("Send invite request to peer : {}",requestOut);
 
                 // Transaction context
                 Context context = new Context();

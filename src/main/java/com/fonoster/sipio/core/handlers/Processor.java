@@ -31,7 +31,6 @@ public class Processor implements SipListener {
     @Override
     public void processRequest(RequestEvent requestEvent) {
         try {
-            logger.info("Process Request {}",requestEvent.getRequest().getMethod());
             requestProcessor.process((RequestEventExt) requestEvent);
         } catch (Exception e) {
             e.printStackTrace();

@@ -8,6 +8,7 @@ import com.google.gson.JsonParser;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.ValidationMessage;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,13 +42,15 @@ public class ResourceUtil {
 
     public String getJsonString(String yamlFile) throws IOException {
         String yaml = this.readFile(yamlFile);
+        if (StringUtils.isEmpty(yaml)) return null;
         Object obj = this.yamlReader.readValue(yaml, Object.class);
         return this.mapper.writeValueAsString(obj);
     }
 
     public JsonElement getJson(String yamlFile) throws IOException {
-
-        return new JsonParser().parse(getJsonString(yamlFile));
+        String json = getJsonString(yamlFile);
+        if (StringUtils.isEmpty(json)) return null;
+        return new JsonParser().parse(json);
     }
 
     public boolean isResourceValid(String schemaPath, String nodePath) throws Exception {

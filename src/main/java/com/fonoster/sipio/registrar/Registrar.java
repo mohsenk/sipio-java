@@ -1,27 +1,27 @@
 package com.fonoster.sipio.registrar;
 
-import com.fonoster.sipio.core.model.*;
+import com.fonoster.sipio.core.model.Agent;
+import com.fonoster.sipio.core.model.Peer;
+import com.fonoster.sipio.core.model.Route;
+import com.fonoster.sipio.core.model.User;
+import com.fonoster.sipio.location.Locator;
 import com.fonoster.sipio.repository.AgentRepository;
 import com.fonoster.sipio.repository.PeerRepository;
-import com.fonoster.sipio.location.Locator;
 import com.fonoster.sipio.utils.AuthHelper;
 import gov.nist.javax.sip.clientauthutils.DigestServerAuthenticationHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-
 import javax.sip.PeerUnavailableException;
 import javax.sip.SipFactory;
 import javax.sip.address.AddressFactory;
 import javax.sip.address.SipURI;
 import javax.sip.header.*;
 import javax.sip.message.Request;
-
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.List;
 
-import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.springframework.util.StringUtils.isEmpty;
+
 
 public class Registrar {
 
@@ -145,7 +145,7 @@ public class Registrar {
     public boolean hasDomain(Agent agent, String domain) {
         if (agent.getDomains() == null || agent.getDomains().isEmpty()) return false;
         for (String d : agent.getDomains()) {
-            if (d.equals(domain)) return true; // @todo - check === opearator converted to this.
+            if (d.equals(domain)) return true;
         }
         return false;
     }

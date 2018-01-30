@@ -1,27 +1,21 @@
 package com.fonoster.sipio.core;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.ValidationMessage;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Set;
 
 public class ResourceUtil {
 
-    JsonSchemaFactory factory = new JsonSchemaFactory();
     ObjectMapper mapper = new ObjectMapper();
     ObjectMapper yamlReader = new ObjectMapper(new YAMLFactory());
 
@@ -53,17 +47,6 @@ public class ResourceUtil {
         return new JsonParser().parse(json);
     }
 
-    public boolean isResourceValid(String schemaPath, String nodePath) throws Exception {
-        JsonSchema schema = this.factory.getSchema(this.readFile(schemaPath));
-        JsonNode node = this.mapper.readTree(this.getJsonString(nodePath));
-        Set<ValidationMessage> errors = schema.validate(node);
-        Boolean result = true;
-        for (ValidationMessage error : errors) {
-            logger.warn("We found some errors in your resource " + node);
-            result = false;
-        }
-        return result;
-    }
 
 
 }

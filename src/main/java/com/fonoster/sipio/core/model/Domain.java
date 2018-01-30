@@ -3,10 +3,8 @@ package com.fonoster.sipio.core.model;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class Domain {

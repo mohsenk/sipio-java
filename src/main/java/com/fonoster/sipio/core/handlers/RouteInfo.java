@@ -3,7 +3,7 @@ package com.fonoster.sipio.core.handlers;
 import com.fonoster.sipio.core.RouteEntityType;
 import com.fonoster.sipio.core.RoutingType;
 import com.fonoster.sipio.repository.*;
-import org.apache.commons.lang3.StringUtils;
+import com.fonoster.sipio.utils.StringUtils;
 
 import javax.sip.PeerUnavailableException;
 import javax.sip.SipFactory;
@@ -66,6 +66,7 @@ public class RouteInfo {
     public RouteEntityType getCallerType() throws ParseException {
         if (PeerRepository.peerExist(this.callerUser)) return RouteEntityType.PEER;
         if (AgentRepository.agentExist(this.callerHost, this.callerUser)) return RouteEntityType.AGENT;
+
         if (StringUtils.isNumeric(this.callerUser)) {
             TelURL telUrl = this.addressFactory.createTelURL(this.callerUser);
             if (DIDsRepository.didExistByTelUrl(telUrl)) return RouteEntityType.DID;

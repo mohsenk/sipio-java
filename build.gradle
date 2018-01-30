@@ -4,9 +4,7 @@ plugins {
 }
 
 
-configurations {
-    compile.exclude module: "spring-boot-starter-tomcat"
-}
+
 
 jar {
     baseName = 'sipio-java'
@@ -18,6 +16,10 @@ sourceCompatibility = 1.8
 repositories {
     mavenCentral()
     jcenter()
+}
+
+configurations {
+    compile.exclude module: "spring-boot-starter-tomcat"
 }
 
 dependencies {

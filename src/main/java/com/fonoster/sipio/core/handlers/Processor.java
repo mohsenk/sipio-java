@@ -62,7 +62,7 @@ public class Processor implements SipListener {
             ServerTransaction serverTransaction = event.getServerTransaction();
 
             if (!this.contextStorage.removeContext(serverTransaction)) {
-                logger.trace("Ongoing Transaction");
+                logger.info("Ongoing Transaction");
             }
         }
     }

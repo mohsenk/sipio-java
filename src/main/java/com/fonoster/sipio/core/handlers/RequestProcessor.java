@@ -7,7 +7,7 @@ import com.fonoster.sipio.registry.GatewayConnector;
 import com.fonoster.sipio.repository.*;
 import com.fonoster.sipio.location.Locator;
 import com.fonoster.sipio.registrar.Registrar;
-import com.fonoster.sipio.utils.IPUtil;
+import com.fonoster.sipio.utils.IPUtils;
 import gov.nist.javax.sip.RequestEventExt;
 import gov.nist.javax.sip.clientauthutils.DigestServerAuthenticationHelper;
 import org.apache.logging.log4j.LogManager;
@@ -148,7 +148,7 @@ public class RequestProcessor {
 
             // First look for the header "DIDRef"
             if (requestOut.getHeader("DIDRef") != null) {
-                telUrl = this.addressFactory.createTelURL(requestOut.getHeader("DIDRef").toString());
+                telUrl = this.addressFactory.createTelURL(((ExtensionHeader)requestOut.getHeader("DIDRef")).getValue());
             } else {
                 telUrl = this.addressFactory.createTelURL(fromURI.getUser());
             }
@@ -215,7 +215,7 @@ public class RequestProcessor {
         String advertisedAddr;
         Integer advertisedPort;
 
-        if (this.config.getExternalAddress() != null && !IPUtil.isLocalNet(route.getSentByAddress())) {
+        if (this.config.getExternalAddress() != null && !IPUtils.isLocalNet(route.getSentByAddress())) {
             advertisedAddr = this.config.getExternalAddress().contains(":") ? this.config.getExternalAddress().split(":")[0] : this.config.getExternalAddress();
             advertisedPort = this.config.getExternalAddress().contains(":") ? Integer.valueOf(this.config.getExternalAddress().split(":")[1]) : lp.getPort();
         } else {

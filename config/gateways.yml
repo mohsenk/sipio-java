@@ -7,6 +7,6 @@
     regService:
       host: sip.mohsen.work:5050
       credentials:
-        username: 'mohsen'
+        username: 'hasan'
         secret: '1234'
       transport: udp

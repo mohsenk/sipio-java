@@ -1,43 +1,25 @@
-package com.fonoster.sipio.core;
+package com.fonoster.sipio.configurations;
 
+import com.fonoster.sipio.core.ConfigManager;
+import com.fonoster.sipio.core.Transport;
 import com.fonoster.sipio.core.model.Config;
-import com.fonoster.sipio.core.handlers.Processor;
-import com.fonoster.sipio.location.Locator;
-import com.fonoster.sipio.registrar.Registrar;
-import com.fonoster.sipio.registry.GatewayConnector;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import javax.sip.*;
-import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
-import java.util.TooManyListenersException;
 
-public class Server {
-
-    static final Logger logger = LogManager.getLogger(Server.class);
-
+@Configuration
+public class SipConfig {
     static final String ANSI_GREEN = "\u001B[32m";
     static final String ANSI_YELLOW = "\u001B[33m";
     static final String ANSI_RESET = "\u001B[0m";
+    static final Logger logger = LoggerFactory.getLogger(SipConfig.class);
 
-
-    Locator locator;
-    Registrar registrar;
-    ContextStorage contextStorage;
-    Float regTimeOut;
-    SipStack sipStack;
-
-    public Server(Locator locator, Registrar registrar, ContextStorage contextStorage) {
-        this.locator = locator;
-        this.registrar = registrar;
-        this.contextStorage = contextStorage;
-        this.regTimeOut = 0.6f;
-    }
-
-    public void start() throws PeerUnavailableException, InvalidArgumentException, TransportNotSupportedException, ObjectInUseException, NoSuchAlgorithmException, TooManyListenersException, TransportAlreadySupportedException {
-
-
+    @Bean
+    public SipProvider build() throws Exception {
         SipFactory sipFactory = SipFactory.getInstance();
         Properties properties = new Properties();
 
@@ -76,7 +58,7 @@ public class Server {
 
         Transport firstTransport = config.getTransport().get(0);
 
-        this.sipStack = sipFactory.createSipStack(properties);
+        SipStack sipStack = sipFactory.createSipStack(properties);
         ListeningPoint defTransport = sipStack.createListeningPoint(5060, firstTransport.getProtocol().toLowerCase());
         SipProvider sipProvider = sipStack.createSipProvider(defTransport);
 
@@ -86,36 +68,16 @@ public class Server {
         for (Transport transport : config.getTransport()) {
             String proto = transport.getProtocol().toLowerCase();
 
-//            if ((proto.equals("wss") || proto.equals("tls")) && !config.spec.securityContext) {
-//                logger.warn(ANSI_YELLOW + "Security context not found. Ignoring protocol: " + proto + ANSI_RESET);
-//                continue;
-//            }
-
             if (transport.getAddress() == null) transport.setAddress(config.getBindAddr());
 
-            ListeningPoint lp = sipStack.createListeningPoint(transport.getAddress(), transport.port, proto);
+            ListeningPoint lp = sipStack.createListeningPoint(transport.getAddress(), transport.getPort(), proto);
             sipProvider.addListeningPoint(lp);
 
             logger.info("Listening  @ " + ANSI_GREEN + transport.getAddress()
-                    + ":" + transport.port
+                    + ":" + transport.getPort()
                     + " [" + proto + "]"
                     + ANSI_RESET);
         }
-
-        GatewayConnector gatewayConnector = new GatewayConnector(sipProvider);
-        Processor processor = new Processor(sipProvider, locator, gatewayConnector, registrar, contextStorage);
-
-        sipProvider.addSipListener(processor);
-
-        locator.start();
-        gatewayConnector.start();
-
-
-    }
-
-    public void stop() {
-        this.sipStack.stop();
-        this.locator.stop();
-        System.exit(0);
+        return sipProvider;
     }
 }

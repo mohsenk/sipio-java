@@ -7,7 +7,7 @@ import javax.sip.message.Request;
 public class Context {
 
     ClientTransaction clientTransaction;
-     ServerTransaction serverTransaction;
+    ServerTransaction serverTransaction;
     String method;
     Request requestIn;
     Request requestOut;

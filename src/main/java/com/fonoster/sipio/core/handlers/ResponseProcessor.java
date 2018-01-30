@@ -55,7 +55,7 @@ public class ResponseProcessor {
                 responseIn.getStatusCode() == Response.OK) {
 
             Request request = clientTransaction.getRequest();
-            String gwRef = request.getHeader("GwRef").toString();
+            String gwRef = ((ExtensionHeader)request.getHeader("GwRef")).getValue();
 
             int rPort = viaHeader.getRPort();
             int port = viaHeader.getPort();

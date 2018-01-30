@@ -105,23 +105,24 @@ public class RequestProcessor {
 
         // 1. Security check
         // This routing type is not yet supported
-        if (routeInfo.getRoutingType().equals(RoutingType.INTER_DOMAIN_ROUTING)) {
+        if (routeInfo.getRoutingType() == RoutingType.INTER_DOMAIN_ROUTING) {
             serverTransaction.sendResponse(this.messageFactory.createResponse(Response.FORBIDDEN, requestIn));
-            logger.debug("",requestIn);
+            logger.debug("", requestIn);
             return;
         }
 
-        if (!routeInfo.getRoutingType().equals(RoutingType.DOMAIN_INGRESS_ROUTING)) {
+        if (routeInfo.getRoutingType() == RoutingType.DOMAIN_INGRESS_ROUTING) {
+            if (!this.gatewayConnector.hasIp(remoteIp)) { // calling from outside that is'nt in my gateways ip
+                serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
+                logger.warn("UNAUTHORIZED : Calling from a PSTN and it IP not defined in gateways !", requestIn);
+                return;
+            }
+
+        } else {
             // Do not need to authorized ACK messages...
             if (!method.equals(Request.ACK) && !method.equals(Request.BYE) && !this.authorized(requestIn, serverTransaction)) {
                 serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
-                logger.debug("",requestIn);
-                return;
-            }
-        } else {
-            if (!this.gatewayConnector.hasIp(remoteIp)) {
-                serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
-                logger.debug("",requestIn);
+                logger.debug("", requestIn);
                 return;
             }
         }
@@ -129,7 +130,7 @@ public class RequestProcessor {
         SipURI addressOfRecord = (SipURI) this.getAOR(requestIn);
 
         // We only apply ACL rules to Domain Routing.
-        if (routeInfo.getRoutingType().equals(RoutingType.INTRA_DOMAIN_ROUTING)) {
+        if (routeInfo.getRoutingType() == RoutingType.INTRA_DOMAIN_ROUTING) { // calling in the same domain
             Domain result = DomainRepository.getDomain(addressOfRecord.getHost());
             if (result != null) {
 //                    if (!new ACLUtil(new HashSet<>(), new HashSet<>()).isIpAllowed(result, remoteIp)) { // @todo - fix this
@@ -146,7 +147,7 @@ public class RequestProcessor {
 
         // 3. Determine route
         // 3.0 Peer Egress Routing (PR)
-        if (routeInfo.getRoutingType().equals(RoutingType.PEER_EGRESS_ROUTING)) {
+        if (routeInfo.getRoutingType() == RoutingType.PEER_EGRESS_ROUTING) {
             TelURL telUrl;
 
             // First look for the header "DIDRef"
@@ -160,7 +161,7 @@ public class RequestProcessor {
 
             if (result == null) {
                 serverTransaction.sendResponse(this.messageFactory.createResponse(Response.TEMPORARILY_UNAVAILABLE, requestIn));
-                logger.debug("",requestIn);
+                logger.debug("", requestIn);
                 return;
             }
 
@@ -169,13 +170,13 @@ public class RequestProcessor {
 
             if (route == null) {
                 serverTransaction.sendResponse(this.messageFactory.createResponse(Response.TEMPORARILY_UNAVAILABLE, requestIn));
-                logger.debug("",requestIn);
+                logger.debug("", requestIn);
                 return;
             }
 
             this.processRoute(requestIn, requestOut, route, serverTransaction);
 
-            logger.debug("",requestOut);
+            logger.debug("", requestOut);
             return;
         }
 
@@ -184,7 +185,7 @@ public class RequestProcessor {
 
         if (clients == null || clients.isEmpty()) {
             serverTransaction.sendResponse(this.messageFactory.createResponse(Response.TEMPORARILY_UNAVAILABLE, requestIn));
-            logger.debug("",requestIn);
+            logger.debug("", requestIn);
             return;
         }
 
@@ -241,7 +242,7 @@ public class RequestProcessor {
         }
 
         // i commented this lines for this issue : The parameter `spec.recordRoute` should not be used until further notice
-//        // Stay in the signaling path
+        // Stay in the signaling path
 //        if (this.config.spec.recordRoute) {
 //            SipURI proxyURI = this.addressFactory.createSipURI(null, advertisedAddr);
 //            proxyURI.setLrParam();
@@ -311,7 +312,7 @@ public class RequestProcessor {
             }
         }
 
-        logger.debug("",requestOut);
+        logger.debug("", requestOut);
     }
 
     public boolean authorized(Request request, ServerTransaction serverTransaction) throws ParseException, SipException, InvalidArgumentException {
@@ -323,7 +324,7 @@ public class RequestProcessor {
             Response challengeResponse = this.messageFactory.createResponse(Response.PROXY_AUTHENTICATION_REQUIRED, request);
             this.dsam.generateChallenge(this.headerFactory, challengeResponse, "sipio");
             serverTransaction.sendResponse(challengeResponse);
-            logger.debug("",request);
+            logger.debug("", request);
             return false;
         }
 
@@ -342,7 +343,7 @@ public class RequestProcessor {
             Response challengeResponse = this.messageFactory.createResponse(Response.PROXY_AUTHENTICATION_REQUIRED, request);
             this.dsam.generateChallenge(this.headerFactory, challengeResponse, "sipio");
             serverTransaction.sendResponse(challengeResponse);
-            logger.debug("",request);
+            logger.debug("", request);
             return false;
         }
 
@@ -351,7 +352,7 @@ public class RequestProcessor {
 
 
     /**
-     * Discover DIDs sent via a non-standard header
+     * Discover DIDs sent via a non-standard headerRouًخع
      * The header must be added at config.spec.addressInfo[*]
      * If the such header is present then overwrite the AOR
      */

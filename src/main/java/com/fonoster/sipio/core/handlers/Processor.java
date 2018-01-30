@@ -23,7 +23,7 @@ public class Processor implements SipListener {
     public Processor(SipProvider sipProvider, Locator locator, GatewayConnector gatewayConnector, Registrar registrar, ContextStorage contextStorage) throws PeerUnavailableException, NoSuchAlgorithmException {
         this.contextStorage = contextStorage;
         this.requestProcessor = new RequestProcessor(sipProvider, locator, gatewayConnector, registrar, contextStorage);
-        this.responseProcessor = new ResponseProcessor(sipProvider, locator, gatewayConnector, registrar, contextStorage);
+        this.responseProcessor = new ResponseProcessor(sipProvider, gatewayConnector, contextStorage);
     }
 
 

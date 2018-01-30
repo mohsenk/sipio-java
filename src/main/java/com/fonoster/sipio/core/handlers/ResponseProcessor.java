@@ -28,7 +28,7 @@ public class ResponseProcessor {
     private GatewayConnector gatewayConnector;
     private ContextStorage contextStorage;
 
-    public ResponseProcessor(SipProvider sipProvider, Locator locator, GatewayConnector gatewayConnector, Registrar registrar, ContextStorage contextStorage) throws PeerUnavailableException {
+    public ResponseProcessor(SipProvider sipProvider, GatewayConnector gatewayConnector, ContextStorage contextStorage) throws PeerUnavailableException {
         this.sipProvider = sipProvider;
         this.gatewayConnector = gatewayConnector;
         this.contextStorage = contextStorage;
@@ -68,8 +68,7 @@ public class ResponseProcessor {
                 String transport = viaHeader.getTransport().toLowerCase();
                 // This may not be the best source to get this parameter
                 String peerHost = fromURI.getHost();
-
-                logger.debug("Sip I/O is behind a NAT. Re-registering using Received and RPort");
+                logger.info("Sip I/O is behind a NAT. {}:{} != {}:{}. Re-registering using Received and RPort",host,port,received,rPort);
                 try {
                     this.gatewayConnector.requestChallenge(username, gwRef, peerHost, transport, received, rPort);
                 } catch(Exception e) {

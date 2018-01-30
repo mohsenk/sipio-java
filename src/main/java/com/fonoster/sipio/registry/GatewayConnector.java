@@ -139,11 +139,8 @@ public class GatewayConnector {
     }
 
     public boolean hasIp(String ip) {
-        Iterator<GatewayConnection> iterator = this.registry.values().iterator();
-
-        while (iterator.hasNext()) {
-            GatewayConnection reg = iterator.next();
-            if (reg.getIp().equals(ip)) return true;
+        for (GatewayConnection gatewayConnection : this.registry.values()) {
+            if (gatewayConnection.getIp().equals(ip)) return true;
         }
         return false;
     }

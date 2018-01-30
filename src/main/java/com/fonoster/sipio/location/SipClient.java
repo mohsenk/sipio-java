@@ -27,8 +27,4 @@ public class SipClient {
         return route;
     }
 
-    @Override
-    public String toString() {
-        return new Gson().toJson(this);
-    }
 }

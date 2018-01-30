@@ -3,10 +3,12 @@ package com.fonoster.sipio.core.handlers;
 import com.fonoster.sipio.location.Locator;
 import com.fonoster.sipio.registrar.Registrar;
 import com.fonoster.sipio.utils.AuthHelper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.sip.*;
+import javax.sip.PeerUnavailableException;
+import javax.sip.ServerTransaction;
+import javax.sip.SipFactory;
 import javax.sip.address.URI;
 import javax.sip.header.*;
 import javax.sip.message.MessageFactory;
@@ -18,7 +20,7 @@ import java.text.ParseException;
 public class RegisterHandler {
 
 
-    static final Logger logger = LogManager.getLogger(RegisterHandler.class);
+    static final Logger logger = LoggerFactory.getLogger(RegisterHandler.class);
 
     private Locator locator;
     private Registrar registrar;
@@ -94,7 +96,7 @@ public class RegisterHandler {
             ok.addHeader(contactHeader);
             ok.addHeader(expH);
             transaction.sendResponse(ok);
-            logger.info(ok);
+            logger.info("",ok);
             return true;
         } else if (!contactHeader.getAddress().isWildcard() && expires <= 0) {
             this.locator.removeEndpoint(addressOfRecord, contactURI);
@@ -102,7 +104,7 @@ public class RegisterHandler {
             ok.addHeader(contactHeader);
             ok.addHeader(expH);
             transaction.sendResponse(ok);
-            logger.info(ok);
+            logger.info("{}",ok);
             return true;
         }
 

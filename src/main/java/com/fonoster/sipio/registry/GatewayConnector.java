@@ -5,8 +5,8 @@ import com.fonoster.sipio.core.model.Config;
 import com.fonoster.sipio.core.model.Gateway;
 import com.fonoster.sipio.repository.GateWayRepository;
 import gov.nist.javax.sip.Utils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sip.*;
 import javax.sip.address.Address;
@@ -23,7 +23,7 @@ import java.util.*;
 
 
 public class GatewayConnector {
-    static final Logger logger = LogManager.getLogger(GatewayConnector.class);
+    static final Logger logger = LoggerFactory.getLogger(GatewayConnector.class);
     private final Integer checkExpiresTime;
     private final Integer expires;
     private final SipProvider sipProvider;
@@ -116,11 +116,11 @@ public class GatewayConnector {
             if (e instanceof javax.sip.TransactionUnavailableException || e instanceof javax.sip.SipException) {
                 logger.warn("Unable to register with Gateway -> " + peerHost + ". (Verify your network status)");
             } else {
-                logger.warn(e);
+                logger.warn(e.toString());
             }
         }
 
-        logger.debug(request);
+        logger.info(request.toString());
     }
 
     public void storeRegistry(String username, String host, Integer expires) throws UnknownHostException {

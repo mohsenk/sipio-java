@@ -7,8 +7,8 @@ import com.fonoster.sipio.core.model.Route;
 import com.fonoster.sipio.repository.DIDsRepository;
 import com.fonoster.sipio.repository.DomainRepository;
 import com.fonoster.sipio.repository.GateWayRepository;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.sip.PeerUnavailableException;
@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 @Component
 public class Locator {
 
-    static final Logger logger = LogManager.getLogger(Locator.class);
+    static final Logger logger = LoggerFactory.getLogger(Locator.class);
     private final AddressFactory addressFactory;
     private List<SipClient> clients;
     private Integer checkExpiresTime;

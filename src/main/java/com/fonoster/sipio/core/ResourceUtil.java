@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -19,7 +19,8 @@ public class ResourceUtil {
     ObjectMapper mapper = new ObjectMapper();
     ObjectMapper yamlReader = new ObjectMapper(new YAMLFactory());
 
-    static final Logger logger = LogManager.getLogger(ResourceUtil.class);
+
+    static final Logger logger = LoggerFactory.getLogger(ResourceUtil.class);
 
     public ResourceUtil() {
 

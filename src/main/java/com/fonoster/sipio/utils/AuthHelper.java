@@ -1,7 +1,7 @@
 package com.fonoster.sipio.utils;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.DigestUtils;
 
 import javax.sip.header.HeaderFactory;
@@ -17,7 +17,7 @@ public class AuthHelper {
     String domain = "192.168.1.188";
     String realm = "sipio";
     HeaderFactory headerFactory;
-    static final Logger logger = LogManager.getLogger();
+    static final Logger logger = LoggerFactory.getLogger(AuthHelper.class);
     static final String DEFAULT_ALGORITHM = "MD5";
     private MessageDigest messageDigest;
 

@@ -5,17 +5,17 @@ import com.fonoster.sipio.location.Locator;
 import com.fonoster.sipio.registrar.Registrar;
 import com.fonoster.sipio.registry.GatewayConnector;
 import gov.nist.javax.sip.RequestEventExt;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sip.*;
 import java.security.NoSuchAlgorithmException;
 
 public class Processor implements SipListener {
 
-    static final Logger logger = LogManager.getLogger(Processor.class);
 
+
+    static final Logger logger = LoggerFactory.getLogger(Processor.class);
     private final RequestProcessor requestProcessor;
     private final ResponseProcessor responseProcessor;
     private ContextStorage contextStorage;

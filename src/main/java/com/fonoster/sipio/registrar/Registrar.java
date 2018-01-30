@@ -9,8 +9,9 @@ import com.fonoster.sipio.repository.AgentRepository;
 import com.fonoster.sipio.repository.PeerRepository;
 import com.fonoster.sipio.utils.AuthHelper;
 import gov.nist.javax.sip.clientauthutils.DigestServerAuthenticationHelper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.sip.PeerUnavailableException;
 import javax.sip.SipFactory;
 import javax.sip.address.AddressFactory;
@@ -25,7 +26,7 @@ import static org.springframework.util.StringUtils.isEmpty;
 
 public class Registrar {
 
-    static final Logger logger = LogManager.getLogger(Registrar.class);
+    static final Logger logger = LoggerFactory.getLogger(Registrar.class);
 
     private final Locator locator;
     private final AddressFactory addressFactory;

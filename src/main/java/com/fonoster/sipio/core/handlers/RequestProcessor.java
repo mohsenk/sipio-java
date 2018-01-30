@@ -10,8 +10,8 @@ import com.fonoster.sipio.registrar.Registrar;
 import com.fonoster.sipio.utils.IPUtils;
 import gov.nist.javax.sip.RequestEventExt;
 import gov.nist.javax.sip.clientauthutils.DigestServerAuthenticationHelper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sip.*;
 import javax.sip.address.*;
@@ -44,7 +44,7 @@ public class RequestProcessor {
     HeaderFactory headerFactory;
     AddressFactory addressFactory;
 
-    static final Logger logger = LogManager.getLogger(RequestProcessor.class);
+    static final Logger logger = LoggerFactory.getLogger(RequestProcessor.class);
 
     public RequestProcessor(SipProvider sipProvider, Locator locator, GatewayConnector gatewayConnector, Registrar registrar, ContextStorage contextStorage) throws PeerUnavailableException, NoSuchAlgorithmException {
         this.sipProvider = sipProvider;
@@ -78,12 +78,15 @@ public class RequestProcessor {
         }
 
 
-        if (method.equals(Request.REGISTER)) {
+        if (method.equals(Request.OPTIONS)) {
+            Response okResponse = this.messageFactory.createResponse(Response.OK, requestIn);
+            this.sipProvider.sendResponse(okResponse);
+            return;
+        } else if (method.equals(Request.REGISTER)) {
             // Should we apply ACL rules here too?
             this.registerHandler.register(requestIn, serverTransaction);
             return;
-        }
-        if (method.equals(Request.CANCEL)) {
+        } else if (method.equals(Request.CANCEL)) {
             this.cancelHandler.cancel(requestIn, serverTransaction);
             return;
         } else {
@@ -104,7 +107,7 @@ public class RequestProcessor {
         // This routing type is not yet supported
         if (routeInfo.getRoutingType().equals(RoutingType.INTER_DOMAIN_ROUTING)) {
             serverTransaction.sendResponse(this.messageFactory.createResponse(Response.FORBIDDEN, requestIn));
-            logger.debug(requestIn);
+            logger.debug("",requestIn);
             return;
         }
 
@@ -112,13 +115,13 @@ public class RequestProcessor {
             // Do not need to authorized ACK messages...
             if (!method.equals(Request.ACK) && !method.equals(Request.BYE) && !this.authorized(requestIn, serverTransaction)) {
                 serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
-                logger.debug(requestIn);
+                logger.debug("",requestIn);
                 return;
             }
         } else {
             if (!this.gatewayConnector.hasIp(remoteIp)) {
                 serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
-                logger.debug(requestIn);
+                logger.debug("",requestIn);
                 return;
             }
         }
@@ -148,7 +151,7 @@ public class RequestProcessor {
 
             // First look for the header "DIDRef"
             if (requestOut.getHeader("DIDRef") != null) {
-                telUrl = this.addressFactory.createTelURL(((ExtensionHeader)requestOut.getHeader("DIDRef")).getValue());
+                telUrl = this.addressFactory.createTelURL(((ExtensionHeader) requestOut.getHeader("DIDRef")).getValue());
             } else {
                 telUrl = this.addressFactory.createTelURL(fromURI.getUser());
             }
@@ -157,7 +160,7 @@ public class RequestProcessor {
 
             if (result == null) {
                 serverTransaction.sendResponse(this.messageFactory.createResponse(Response.TEMPORARILY_UNAVAILABLE, requestIn));
-                logger.debug(requestIn);
+                logger.debug("",requestIn);
                 return;
             }
 
@@ -166,13 +169,13 @@ public class RequestProcessor {
 
             if (route == null) {
                 serverTransaction.sendResponse(this.messageFactory.createResponse(Response.TEMPORARILY_UNAVAILABLE, requestIn));
-                logger.debug(requestIn);
+                logger.debug("",requestIn);
                 return;
             }
 
             this.processRoute(requestIn, requestOut, route, serverTransaction);
 
-            logger.debug(requestOut);
+            logger.debug("",requestOut);
             return;
         }
 
@@ -181,7 +184,7 @@ public class RequestProcessor {
 
         if (clients == null || clients.isEmpty()) {
             serverTransaction.sendResponse(this.messageFactory.createResponse(Response.TEMPORARILY_UNAVAILABLE, requestIn));
-            logger.debug(requestIn);
+            logger.debug("",requestIn);
             return;
         }
 
@@ -287,7 +290,7 @@ public class RequestProcessor {
                 // The request must be cloned or the stack will not fork the call
                 ClientTransaction clientTransaction = this.sipProvider.getNewClientTransaction((Request) requestOut.clone());
                 clientTransaction.sendRequest();
-                logger.info("Send invite request to peer : {}",requestOut);
+                logger.info("Send invite request to peer : {}", requestOut);
 
                 // Transaction context
                 Context context = new Context();
@@ -308,7 +311,7 @@ public class RequestProcessor {
             }
         }
 
-        logger.debug(requestOut);
+        logger.debug("",requestOut);
     }
 
     public boolean authorized(Request request, ServerTransaction serverTransaction) throws ParseException, SipException, InvalidArgumentException {
@@ -320,7 +323,7 @@ public class RequestProcessor {
             Response challengeResponse = this.messageFactory.createResponse(Response.PROXY_AUTHENTICATION_REQUIRED, request);
             this.dsam.generateChallenge(this.headerFactory, challengeResponse, "sipio");
             serverTransaction.sendResponse(challengeResponse);
-            logger.debug(request);
+            logger.debug("",request);
             return false;
         }
 
@@ -339,7 +342,7 @@ public class RequestProcessor {
             Response challengeResponse = this.messageFactory.createResponse(Response.PROXY_AUTHENTICATION_REQUIRED, request);
             this.dsam.generateChallenge(this.headerFactory, challengeResponse, "sipio");
             serverTransaction.sendResponse(challengeResponse);
-            logger.debug(request);
+            logger.debug("",request);
             return false;
         }
 

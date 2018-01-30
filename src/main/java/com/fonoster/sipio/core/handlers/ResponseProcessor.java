@@ -8,8 +8,9 @@ import com.fonoster.sipio.registrar.Registrar;
 import com.fonoster.sipio.registry.GatewayConnector;
 import gov.nist.javax.sip.SipStackImpl;
 import gov.nist.javax.sip.clientauthutils.AuthenticationHelper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.sip.*;
 import javax.sip.address.SipURI;
 import javax.sip.header.*;
@@ -19,7 +20,7 @@ import java.net.UnknownHostException;
 
 public class ResponseProcessor {
 
-    static final Logger logger = LogManager.getLogger(ResponseProcessor.class);
+    static final Logger logger = LoggerFactory.getLogger(ResponseProcessor.class);
     private final HeaderFactory headerFactory;
 
     private AccountManagerService accountManagerService;
@@ -95,7 +96,7 @@ public class ResponseProcessor {
             AuthenticationHelper authenticationHelper = sipStack.getAuthenticationHelper(this.accountManagerService, this.headerFactory);
             ClientTransaction t = authenticationHelper.handleChallenge(responseIn, clientTransaction, (SipProvider) event.getSource(), 5);
             t.sendRequest();
-            logger.debug(responseIn);
+            logger.debug("",responseIn);
             return;
         }
 
@@ -116,6 +117,6 @@ public class ResponseProcessor {
             // There is no more Via headers; the response was intended for the proxy.
             if (responseOut.getHeader(ViaHeader.NAME) != null) this.sipProvider.sendResponse(responseOut);
         }
-        logger.debug(responseOut);
+        logger.debug("",responseOut);
     }
 }

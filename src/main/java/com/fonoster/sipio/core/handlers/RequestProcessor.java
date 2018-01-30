@@ -197,7 +197,7 @@ public class RequestProcessor {
         return;
     }
 
-    public void processRoute(Request requestIn, Request requestOut, Route route, ServerTransaction serverTransaction) throws SipException, InvalidArgumentException, ParseException {
+    public void processRoute(Request requestIn, Request requestOut, Route route, ServerTransaction serverTransaction) throws Exception {
         requestOut.setRequestURI(route.getContactURI());
         RouteHeader routeHeader = (RouteHeader) requestIn.getHeader(RouteHeader.NAME);
         ViaHeader rVia = (ViaHeader) requestIn.getHeader(ViaHeader.NAME);
@@ -219,7 +219,7 @@ public class RequestProcessor {
         String advertisedAddr;
         Integer advertisedPort;
 
-        if (this.config.getExternalAddress() != null && !IPUtils.isLocalNet(route.getSentByAddress())) {
+        if (this.config.getExternalAddress() != null && !IPUtils.isLocalNet(null,route.getSentByAddress())) {
             advertisedAddr = this.config.getExternalAddress().contains(":") ? this.config.getExternalAddress().split(":")[0] : this.config.getExternalAddress();
             advertisedPort = this.config.getExternalAddress().contains(":") ? Integer.valueOf(this.config.getExternalAddress().split(":")[1]) : lp.getPort();
         } else {

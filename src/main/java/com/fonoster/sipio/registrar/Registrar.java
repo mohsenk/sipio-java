@@ -17,6 +17,7 @@ import javax.sip.address.SipURI;
 import javax.sip.header.*;
 import javax.sip.message.Request;
 
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -28,18 +29,21 @@ public class Registrar {
 
     private final Locator locator;
     private final AddressFactory addressFactory;
-    private final AuthHelper authHelper = new AuthHelper();
+    private final AuthHelper authHelper;
+    private final DigestServerAuthenticationHelper dsam;
 
-    public Registrar(Locator locator) throws PeerUnavailableException {
+    public Registrar(Locator locator) throws PeerUnavailableException, NoSuchAlgorithmException {
         this.locator = locator;
         this.addressFactory = SipFactory.getInstance().createAddressFactory();
+        this.dsam = new DigestServerAuthenticationHelper();
+        this.authHelper = new AuthHelper();
     }
 
 
-    public boolean register(Request request) throws Exception {
+    public boolean register(Request r) throws Exception {
         // For some reason this references the parent object
         // to avoid I just clone it!
-        //Request request = (Request) r.clone();
+        Request request = (Request) r.clone();
         ViaHeader viaHeader = (ViaHeader) request.getHeader(ViaHeader.NAME);
         AuthorizationHeader authHeader = (AuthorizationHeader) request.getHeader(AuthorizationHeader.NAME);
         ContactHeader contactHeader = (ContactHeader) request.getHeader(ContactHeader.NAME);
@@ -101,10 +105,9 @@ public class Registrar {
                 authHeader.getQop()
         );
 
-        calculatedResponse = response;
-        if (calculatedResponse.equals(response)) {
+        if (!calculatedResponse.equals(response)) {
             // Detect NAT
-            boolean nat = (viaHeader.getHost() + viaHeader.getPort()) != (viaHeader.getReceived() + viaHeader.getParameter("rport"));
+            boolean nat = !((viaHeader.getHost() + viaHeader.getPort()).equals(viaHeader.getReceived() + viaHeader.getParameter("rport")));
 
             Route route = new Route();
             route.setContactURI(contactURI);

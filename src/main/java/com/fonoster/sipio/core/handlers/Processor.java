@@ -3,14 +3,13 @@ package com.fonoster.sipio.core.handlers;
 import com.fonoster.sipio.core.ContextStorage;
 import com.fonoster.sipio.location.Locator;
 import com.fonoster.sipio.registrar.Registrar;
-import com.fonoster.sipio.registry.Registry;
+import com.fonoster.sipio.registry.GatewayConnector;
 import gov.nist.javax.sip.RequestEventExt;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 
 import javax.sip.*;
-import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 
 public class Processor implements SipListener {
@@ -21,17 +20,16 @@ public class Processor implements SipListener {
     private final ResponseProcessor responseProcessor;
     private ContextStorage contextStorage;
 
-    public Processor(SipProvider sipProvider, Locator locator, Registry registry, Registrar registrar, ContextStorage contextStorage) throws PeerUnavailableException, NoSuchAlgorithmException {
+    public Processor(SipProvider sipProvider, Locator locator, GatewayConnector gatewayConnector, Registrar registrar, ContextStorage contextStorage) throws PeerUnavailableException, NoSuchAlgorithmException {
         this.contextStorage = contextStorage;
-        this.requestProcessor = new RequestProcessor(sipProvider, locator, registry, registrar, contextStorage);
-        this.responseProcessor = new ResponseProcessor(sipProvider, locator, registry, registrar, contextStorage);
+        this.requestProcessor = new RequestProcessor(sipProvider, locator, gatewayConnector, registrar, contextStorage);
+        this.responseProcessor = new ResponseProcessor(sipProvider, locator, gatewayConnector, registrar, contextStorage);
     }
 
 
     @Override
     public void processRequest(RequestEvent requestEvent) {
         try {
-            logger.info("Process Request {}",requestEvent.getRequest().getMethod());
             requestProcessor.process((RequestEventExt) requestEvent);
         } catch (Exception e) {
             e.printStackTrace();

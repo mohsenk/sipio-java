@@ -12,6 +12,8 @@ import javax.sip.header.*;
 import javax.sip.message.MessageFactory;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
+import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 
 public class RegisterHandler {
 
@@ -24,21 +26,19 @@ public class RegisterHandler {
     private HeaderFactory headerFactory;
     private AuthHelper authHelper;
 
-    public RegisterHandler(Locator locator, Registrar registrar) throws PeerUnavailableException {
+    public RegisterHandler(Locator locator, Registrar registrar) throws PeerUnavailableException, NoSuchAlgorithmException {
         this.locator = locator;
         this.registrar = registrar;
         this.messageFactory = SipFactory.getInstance().createMessageFactory();
         this.headerFactory = SipFactory.getInstance().createHeaderFactory();
-        this.authHelper = new AuthHelper(this.headerFactory);
+        this.authHelper = new AuthHelper();
 
     }
 
     public void register(Request request, ServerTransaction transaction) throws Exception {
         ContactHeader contactHeader = (ContactHeader) request.getHeader(ContactHeader.NAME);
-        URI contactURI = contactHeader.getAddress().getURI();
+
         AuthorizationHeader authHeader = (AuthorizationHeader) request.getHeader(AuthorizationHeader.NAME);
-        ToHeader toHeader = (ToHeader) request.getHeader(ToHeader.NAME);
-        URI addressOfRecord = toHeader.getAddress().getURI();
 
         int expires;
 
@@ -50,27 +50,14 @@ public class RegisterHandler {
 
         ExpiresHeader expH = this.headerFactory.createExpiresHeader(expires);
 
-        if (contactHeader.getAddress().isWildcard() && expires <= 0) {
-            this.locator.removeEndpoint(addressOfRecord);
-            Response ok = this.messageFactory.createResponse(Response.OK, request);
-            ok.addHeader(contactHeader);
-            ok.addHeader(expH);
-            transaction.sendResponse(ok);
-            return;
-        } else if (!contactHeader.getAddress().isWildcard() && expires <= 0) {
-            this.locator.removeEndpoint(addressOfRecord, contactURI);
-            Response ok = this.messageFactory.createResponse(Response.OK, request);
-            ok.addHeader(contactHeader);
-            ok.addHeader(expH);
-            transaction.sendResponse(ok);
+        if (expires <= 0 && expired(request, transaction, expires)) {
             return;
         }
 
         if (authHeader == null) {
-            Response unauthorized = this.messageFactory.createResponse(Response.UNAUTHORIZED, request);
-            unauthorized.addHeader(this.authHelper.generateChallenge());
-            transaction.sendResponse(unauthorized);
-            logger.debug(unauthorized);
+            Response response = buildAccessDeniedResponse(request);
+            transaction.sendResponse(response);
+            logger.info("Response to register request : {}", response);
             return;
         }
 
@@ -79,14 +66,46 @@ public class RegisterHandler {
             ok.addHeader(contactHeader);
             ok.addHeader(expH);
             transaction.sendResponse(ok);
-            logger.debug(ok);
+            logger.info("Response to register request : {}", ok);
         } else {
-            Response unauthorized = this.messageFactory.createResponse(Response.UNAUTHORIZED, request);
-            unauthorized.addHeader(this.authHelper.generateChallenge(this.headerFactory));
-            transaction.sendResponse(unauthorized);
-            logger.debug(unauthorized);
+            Response response = buildAccessDeniedResponse(request);
+            transaction.sendResponse(response);
+            logger.info("Response to register request : {}", response);
         }
 
 
+    }
+
+    public Response buildAccessDeniedResponse(Request request) throws ParseException, NoSuchAlgorithmException {
+        Response unauthorized = this.messageFactory.createResponse(Response.UNAUTHORIZED, request);
+        unauthorized.addHeader(this.authHelper.generateChallenge(headerFactory));
+        return unauthorized;
+    }
+
+    public boolean expired(Request request, ServerTransaction transaction, int expires) throws Exception {
+        ContactHeader contactHeader = (ContactHeader) request.getHeader(ContactHeader.NAME);
+        ToHeader toHeader = (ToHeader) request.getHeader(ToHeader.NAME);
+        URI contactURI = contactHeader.getAddress().getURI();
+        URI addressOfRecord = toHeader.getAddress().getURI();
+        ExpiresHeader expH = this.headerFactory.createExpiresHeader(expires);
+        if (contactHeader.getAddress().isWildcard()) {
+            this.locator.removeEndpoint(addressOfRecord);
+            Response ok = this.messageFactory.createResponse(Response.OK, request);
+            ok.addHeader(contactHeader);
+            ok.addHeader(expH);
+            transaction.sendResponse(ok);
+            logger.info(ok);
+            return true;
+        } else if (!contactHeader.getAddress().isWildcard() && expires <= 0) {
+            this.locator.removeEndpoint(addressOfRecord, contactURI);
+            Response ok = this.messageFactory.createResponse(Response.OK, request);
+            ok.addHeader(contactHeader);
+            ok.addHeader(expH);
+            transaction.sendResponse(ok);
+            logger.info(ok);
+            return true;
+        }
+
+        return false;
     }
 }

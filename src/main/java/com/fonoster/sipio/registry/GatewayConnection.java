@@ -2,14 +2,14 @@ package com.fonoster.sipio.registry;
 
 import java.time.LocalDateTime;
 
-public class RegistryModel {
+public class GatewayConnection {
     String username;
     String host;
     String ip;
     Integer expires;
     LocalDateTime registeredOn;
 
-    public RegistryModel(String username, String host, String ip, Integer expires) {
+    public GatewayConnection(String username, String host, String ip, Integer expires) {
         this.username = username;
         this.host = host;
         this.ip = ip;

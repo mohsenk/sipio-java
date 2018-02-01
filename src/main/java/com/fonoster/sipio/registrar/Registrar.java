@@ -31,12 +31,10 @@ public class Registrar {
     private final Locator locator;
     private final AddressFactory addressFactory;
     private final AuthHelper authHelper;
-    private final DigestServerAuthenticationHelper dsam;
 
     public Registrar(Locator locator) throws PeerUnavailableException, NoSuchAlgorithmException {
         this.locator = locator;
         this.addressFactory = SipFactory.getInstance().createAddressFactory();
-        this.dsam = new DigestServerAuthenticationHelper();
         this.authHelper = new AuthHelper();
     }
 
@@ -154,7 +152,7 @@ public class Registrar {
 
     public String getNonceCount(int d) {
         String h = Integer.toHexString(d);
-        int cSize = 8 - h.toString().length();
+        int cSize = 8 - h.length();
         String nc = "";
         int cnt = 0;
 

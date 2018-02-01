@@ -1,3 +1,5 @@
+package com.fonoster.sipio;
+
 import com.fonoster.sipio.utils.IPUtils;
 import org.junit.Test;
 

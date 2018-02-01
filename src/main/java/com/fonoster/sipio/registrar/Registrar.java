@@ -117,7 +117,7 @@ public class Registrar {
             route.setSentByAddress(viaHeader.getHost());
             route.setSentByPort(viaHeader.getPort());
             route.setReceived(viaHeader.getReceived());
-            route.setRport(viaHeader.getParameter("rport"));
+            route.setRport(Integer.valueOf(viaHeader.getParameter("rport")));
             route.setRegisteredOn(LocalDateTime.now());
             route.setExpires(expires);
             route.setNat(nat);

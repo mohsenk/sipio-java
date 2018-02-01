@@ -66,7 +66,6 @@ public class RouteInfo {
     public RouteEntityType getCallerType() throws ParseException {
         if (PeerRepository.peerExist(this.callerUser)) return RouteEntityType.PEER;
         if (AgentRepository.agentExist(this.callerHost, this.callerUser)) return RouteEntityType.AGENT;
-
         if (StringUtils.isNumeric(this.callerUser)) {
             TelURL telUrl = this.addressFactory.createTelURL(this.callerUser);
             if (DIDsRepository.didExistByTelUrl(telUrl)) return RouteEntityType.DID;

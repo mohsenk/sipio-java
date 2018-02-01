@@ -41,7 +41,7 @@ public class IPUtils {
         return false;
     }
 
-    private static SubnetUtils getSubnetUtils(String address) {
+    public static SubnetUtils getSubnetUtils(String address) {
         SubnetUtils subnetUtils = null;
         if (isIp(address)) {
             subnetUtils = new SubnetUtils(address + "/31");

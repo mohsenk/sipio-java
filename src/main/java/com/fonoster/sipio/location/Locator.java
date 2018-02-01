@@ -98,6 +98,15 @@ public class Locator {
         this.clients.add(new SipClient(this.aorAsString(addressOfRecord), routeKey, route));
     }
 
+    public SipClient getPeerRouteByHost(SipURI addressOfRecord) {
+        for (SipClient client : this.clients) {
+            String h1 = addressOfRecord.getHost();
+            String h2 = client.getRoute().getContactURI().getHost();
+            if (h1.equals(h2))
+                return client;
+        }
+        return null;
+    }
 
     public List<SipClient> findEndpoint(URI addressOfRecord) throws Exception {
         if (addressOfRecord instanceof javax.sip.address.TelURL) {
@@ -117,6 +126,15 @@ public class Locator {
             if (routes != null) {
                 return routes;
             }
+
+
+            // Check peer's route by host
+            SipClient client = this.getPeerRouteByHost((SipURI) addressOfRecord);
+
+            if (client != null) {
+                return Arrays.asList(client);
+            }
+
 
             // Then search for a DID
             try {

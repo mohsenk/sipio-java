@@ -1,5 +1,6 @@
 package com.fonoster.sipio.core.model;
 
+import javax.sip.address.SipURI;
 import javax.sip.address.URI;
 import java.time.LocalDateTime;
 
@@ -11,8 +12,8 @@ public class Route {
     String sentByAddress;
     Integer sentByPort;
     String received;
-    String rport;
-    URI contactURI;
+    Integer rport;
+    SipURI contactURI;
     LocalDateTime registeredOn;
     Integer expires;
     Boolean nat;
@@ -113,19 +114,19 @@ public class Route {
         this.received = received;
     }
 
-    public String getRport() {
+    public Integer getRport() {
         return rport;
     }
 
-    public void setRport(String rport) {
+    public void setRport(Integer rport) {
         this.rport = rport;
     }
 
-    public URI getContactURI() {
+    public SipURI getContactURI() {
         return contactURI;
     }
 
-    public void setContactURI(URI contactURI) {
+    public void setContactURI(SipURI contactURI) {
         this.contactURI = contactURI;
     }
 

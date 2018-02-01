@@ -28,7 +28,7 @@ public class LocatorTests {
     }
 
     @Test
-    public void get_peer_route_by_host() throws Exception {
+    public void getPeerRouteByHost() throws Exception {
         SipURI peerContactURI = addressFactory.createSipURI("ast", "192.168.1.2:5060");
         SipURI aor = addressFactory.createSipURI("7853178070", "192.168.1.2:5060");
 

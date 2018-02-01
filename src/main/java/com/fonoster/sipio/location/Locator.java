@@ -83,15 +83,6 @@ public class Locator {
     public void addEndpoint(URI addressOfRecord, Route route) throws Exception {
         List<SipClient> result = this.findEndpoint(addressOfRecord);
 
-//        Object routes;
-//
-//        // ThruGw is not available in db. We obtain that from api
-//        if (result != null && result instanceof Route && !((Route) result).isThruGw()) {
-//            routes = result;
-//        } else {
-//            routes = new HashMap();
-//        }
-
         // Not using aorAsString because we need to consider the port, etc.
         String routeKey = route.getContactURI().toString();
         // See NOTE #1
@@ -219,7 +210,6 @@ public class Locator {
         return null;
     }
 
-    // @todo - need to change Route model
     public Route getEgressRouteForPeer(SipURI addressOfRecord, String didRef) throws ParseException {
         AddressFactory addressFactory = this.addressFactory;
         DID did = DIDsRepository.getDID(didRef);

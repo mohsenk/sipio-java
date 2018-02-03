@@ -54,6 +54,8 @@ public class Config {
         JsonObject metaDataJson = json.get("metadata").getAsJsonObject();
         if (metaDataJson.has("userAgent")) {
             this.userAgent = metaDataJson.get("userAgent").getAsString();
+        } else {
+            this.userAgent = "Sip I/O v1.0";
         }
         if (specJson.has("externAddr")) {
             this.externalAddress = specJson.get("externAddr").getAsString();
@@ -74,6 +76,7 @@ public class Config {
         }
 
         this.traceLevel = specJson.get("logging").getAsJsonObject().get("traceLevel").getAsInt();
+
 
     }
 

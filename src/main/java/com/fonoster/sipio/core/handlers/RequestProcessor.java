@@ -206,7 +206,7 @@ public class RequestProcessor {
         String transport = rVia.getTransport().toLowerCase();
         ListeningPoint lp = this.sipProvider.getListeningPoint(transport);
         int localPort = lp.getPort();
-        String localIp = lp.getIPAddress().toString();
+        String localIp = lp.getIPAddress();
         String method = requestIn.getMethod();
         String rcvHost = ((SipURI) route.getContactURI()).getHost();
 

@@ -93,7 +93,9 @@ public class Locator {
         for (SipClient client : this.clients) {
             String h1 = addressOfRecord.getHost();
             String h2 = client.getRoute().getContactURI().getHost();
-            if (h1.equals(h2))
+            Integer p1 = client.getRoute().getContactURI().getPort() == -1 ? 5060 : client.getRoute().getContactURI().getPort();
+            Integer p2 = addressOfRecord.getPort() == -1 ? 5060 : addressOfRecord.getPort();
+            if (h1.equals(h2) && p1.equals(p2))
                 return client;
         }
         return null;

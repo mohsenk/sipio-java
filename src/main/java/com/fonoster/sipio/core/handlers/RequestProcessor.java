@@ -20,6 +20,7 @@ import javax.sip.message.MessageFactory;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
 
+import java.net.InetAddress;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.*;
@@ -83,7 +84,7 @@ public class RequestProcessor {
             this.sipProvider.sendResponse(okResponse);
             return;
 
-        }  else if (method.equals(Request.REGISTER)) {
+        } else if (method.equals(Request.REGISTER)) {
             // Should we apply ACL rules here too?
             this.registerHandler.register(requestIn, serverTransaction);
             return;
@@ -231,13 +232,14 @@ public class RequestProcessor {
         logger.debug("advertisedAddr is -> " + advertisedAddr);
         logger.debug("advertisedPort is -> " + advertisedPort);
 
-        // Remove route header if host is same as the proxy
+        // Remove route header if host's address is the same as the proxy's address
         if (routeHeader != null) {
+
             SipURI uri = (SipURI) routeHeader.getAddress().getURI();
-            String routeHeaderHost = uri.getHost();
-            Integer routeHeaderPort = uri.getPort();
-            if ((routeHeaderHost.equals(localIp) && routeHeaderPort.equals(localPort))
-                    || ((routeHeaderHost.equals(advertisedAddr) && routeHeaderPort.equals(advertisedPort)))) {
+            String h = uri.getHost();
+            String routeHost = IPUtils.isIp(h) ? h : InetAddress.getByName(h).getHostAddress();
+            Integer routePort = uri.getPort();
+            if ((routeHost.equals(localIp) && routePort.equals(localPort)) || ((routeHost.equals(advertisedAddr) && routePort.equals(advertisedPort)))) {
                 requestOut.removeFirst(RouteHeader.NAME);
             }
         }
@@ -323,7 +325,7 @@ public class RequestProcessor {
 
         if (authHeader == null) {
             Response challengeResponse = this.messageFactory.createResponse(Response.PROXY_AUTHENTICATION_REQUIRED, request);
-            this.dsam.generateChallenge(this.headerFactory, challengeResponse,  fromURI.getHost());
+            this.dsam.generateChallenge(this.headerFactory, challengeResponse, fromURI.getHost());
             serverTransaction.sendResponse(challengeResponse);
             logger.debug("", request);
             return false;
@@ -342,7 +344,7 @@ public class RequestProcessor {
         if (!this.dsam.doAuthenticatePlainTextPassword(request, user.getSecret())) {
 
             Response challengeResponse = this.messageFactory.createResponse(Response.PROXY_AUTHENTICATION_REQUIRED, request);
-            this.dsam.generateChallenge(this.headerFactory, challengeResponse,  fromURI.getHost());
+            this.dsam.generateChallenge(this.headerFactory, challengeResponse, fromURI.getHost());
             serverTransaction.sendResponse(challengeResponse);
             logger.debug("", request);
             return false;

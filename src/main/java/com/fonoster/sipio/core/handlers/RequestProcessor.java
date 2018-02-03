@@ -82,7 +82,8 @@ public class RequestProcessor {
             Response okResponse = this.messageFactory.createResponse(Response.OK, requestIn);
             this.sipProvider.sendResponse(okResponse);
             return;
-        } else if (method.equals(Request.REGISTER)) {
+
+        }  else if (method.equals(Request.REGISTER)) {
             // Should we apply ACL rules here too?
             this.registerHandler.register(requestIn, serverTransaction);
             return;
@@ -219,7 +220,7 @@ public class RequestProcessor {
         String advertisedAddr;
         Integer advertisedPort;
 
-        if (this.config.getExternalAddress() != null && !IPUtils.isLocalNet(null,route.getSentByAddress())) {
+        if (this.config.getExternalAddress() != null && !IPUtils.isLocalNet(null, route.getSentByAddress())) {
             advertisedAddr = this.config.getExternalAddress().contains(":") ? this.config.getExternalAddress().split(":")[0] : this.config.getExternalAddress();
             advertisedPort = this.config.getExternalAddress().contains(":") ? Integer.valueOf(this.config.getExternalAddress().split(":")[1]) : lp.getPort();
         } else {
@@ -322,7 +323,7 @@ public class RequestProcessor {
 
         if (authHeader == null) {
             Response challengeResponse = this.messageFactory.createResponse(Response.PROXY_AUTHENTICATION_REQUIRED, request);
-            this.dsam.generateChallenge(this.headerFactory, challengeResponse, "sipio");
+            this.dsam.generateChallenge(this.headerFactory, challengeResponse,  fromURI.getHost());
             serverTransaction.sendResponse(challengeResponse);
             logger.debug("", request);
             return false;
@@ -341,7 +342,7 @@ public class RequestProcessor {
         if (!this.dsam.doAuthenticatePlainTextPassword(request, user.getSecret())) {
 
             Response challengeResponse = this.messageFactory.createResponse(Response.PROXY_AUTHENTICATION_REQUIRED, request);
-            this.dsam.generateChallenge(this.headerFactory, challengeResponse, "sipio");
+            this.dsam.generateChallenge(this.headerFactory, challengeResponse,  fromURI.getHost());
             serverTransaction.sendResponse(challengeResponse);
             logger.debug("", request);
             return false;

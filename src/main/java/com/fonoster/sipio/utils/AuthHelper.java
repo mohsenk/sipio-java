@@ -15,7 +15,6 @@ import java.util.Random;
 public class AuthHelper {
 
     String domain = "192.168.1.188";
-    String realm = "sipio";
     HeaderFactory headerFactory;
     static final Logger logger = LoggerFactory.getLogger(AuthHelper.class);
     static final String DEFAULT_ALGORITHM = "MD5";
@@ -29,7 +28,7 @@ public class AuthHelper {
 
     public String calculateResponse(String userName, String secret, String realm, String nonce, String nc,
                                     String cnonce, String uri, String method, String gop) {
-        logger.info("calculateResponse : username: {} , password : {} ,  realm : {} , nonce : {} , nc : {} , cnonce : {} , uri : {} ,  method : {} , gop : {}", userName, secret, realm, nonce, nc, cnonce, uri, method, gop);
+        logger.debug("calculateResponse : username: {} , password : {} ,  realm : {} , nonce : {} , nc : {} , cnonce : {} , uri : {} ,  method : {} , gop : {}", userName, secret, realm, nonce, nc, cnonce, uri, method, gop);
         String a1 = userName + ":" + realm + ":" + secret;
         String a2 = method.toUpperCase() + ":" + uri;
         String ha1 = DigestUtils.md5DigestAsHex(a1.getBytes());
@@ -46,9 +45,8 @@ public class AuthHelper {
 
 
 
-    public WWWAuthenticateHeader generateChallenge(HeaderFactory headerFactory) throws ParseException, NoSuchAlgorithmException {
+    public WWWAuthenticateHeader generateChallenge(HeaderFactory headerFactory,String realm) throws ParseException, NoSuchAlgorithmException {
         WWWAuthenticateHeader wwwAuthHeader = headerFactory.createWWWAuthenticateHeader("Digest");
-        wwwAuthHeader.setDomain(domain);
         wwwAuthHeader.setRealm(realm);
         wwwAuthHeader.setQop("auth");
         wwwAuthHeader.setOpaque("");
@@ -59,9 +57,6 @@ public class AuthHelper {
         return wwwAuthHeader;
     }
 
-    public WWWAuthenticateHeader generateChallenge() throws ParseException, NoSuchAlgorithmException {
-        return generateChallenge(headerFactory);
-    }
 
 
     private String generateNonce() throws NoSuchAlgorithmException {

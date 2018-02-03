@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import javax.sip.PeerUnavailableException;
 import javax.sip.ServerTransaction;
 import javax.sip.SipFactory;
+import javax.sip.address.SipURI;
 import javax.sip.address.URI;
 import javax.sip.header.*;
 import javax.sip.message.MessageFactory;
@@ -41,7 +42,8 @@ public class RegisterHandler {
         ContactHeader contactHeader = (ContactHeader) request.getHeader(ContactHeader.NAME);
 
         AuthorizationHeader authHeader = (AuthorizationHeader) request.getHeader(AuthorizationHeader.NAME);
-
+        ToHeader toHeader = (ToHeader) request.getHeader(ToHeader.NAME);
+        SipURI addressOfRecord = (SipURI) toHeader.getAddress().getURI();
         int expires;
 
         if (request.getExpires() != null) {
@@ -56,8 +58,10 @@ public class RegisterHandler {
             return;
         }
 
+        String  realm = addressOfRecord.getHost();
+
         if (authHeader == null) {
-            Response response = buildAccessDeniedResponse(request);
+            Response response = buildAccessDeniedResponse(request,realm);
             transaction.sendResponse(response);
             logger.info("Response to register request : {}", response);
             return;
@@ -70,7 +74,7 @@ public class RegisterHandler {
             transaction.sendResponse(ok);
             logger.info("Response to register request : {}", ok);
         } else {
-            Response response = buildAccessDeniedResponse(request);
+            Response response = buildAccessDeniedResponse(request,realm);
             transaction.sendResponse(response);
             logger.info("Response to register request : {}", response);
         }
@@ -78,9 +82,9 @@ public class RegisterHandler {
 
     }
 
-    public Response buildAccessDeniedResponse(Request request) throws ParseException, NoSuchAlgorithmException {
+    public Response buildAccessDeniedResponse(Request request,String realm) throws ParseException, NoSuchAlgorithmException {
         Response unauthorized = this.messageFactory.createResponse(Response.UNAUTHORIZED, request);
-        unauthorized.addHeader(this.authHelper.generateChallenge(headerFactory));
+        unauthorized.addHeader(this.authHelper.generateChallenge(headerFactory,realm));
         return unauthorized;
     }
 
@@ -96,7 +100,7 @@ public class RegisterHandler {
             ok.addHeader(contactHeader);
             ok.addHeader(expH);
             transaction.sendResponse(ok);
-            logger.info("",ok);
+            logger.info("", ok);
             return true;
         } else if (!contactHeader.getAddress().isWildcard() && expires <= 0) {
             this.locator.removeEndpoint(addressOfRecord, contactURI);
@@ -104,7 +108,7 @@ public class RegisterHandler {
             ok.addHeader(contactHeader);
             ok.addHeader(expH);
             transaction.sendResponse(ok);
-            logger.info("{}",ok);
+            logger.info("{}", ok);
             return true;
         }
 

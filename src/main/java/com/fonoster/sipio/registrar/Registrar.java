@@ -113,7 +113,7 @@ public class Registrar {
             route.setLinkAOR(false);
             route.setThruGw(false);
             route.setSentByAddress(viaHeader.getHost());
-            route.setSentByPort(viaHeader.getPort());
+            route.setSentByPort(viaHeader.getPort() == -1 ? 5060 : viaHeader.getPort());
             route.setReceived(viaHeader.getReceived());
             route.setRport(Integer.valueOf(viaHeader.getParameter("rport")));
             route.setRegisteredOn(LocalDateTime.now());

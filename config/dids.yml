@@ -9,8 +9,8 @@
       countryISOCode: US
   spec:
     location:
-      telUrl: 'tel:17066041487'
-      aorLink: 'sip:janie@sip.ocean.com'
+      telUrl: 'tel:123456'
+      aorLink: 'sip:hasan@sip.mohsen.work'
 
 - apiVersion: v1draft1
   kind: DID

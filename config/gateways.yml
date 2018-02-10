@@ -1,12 +1,12 @@
 - apiVersion: v1draft1
   kind: Gateway
   metadata:
-    name: Provider 1
+    name: sip.mohsen.work gateway
     ref:  GW0001
   spec:
     regService:
       host: sip.mohsen.work:5050
       credentials:
-        username: 'hasan'
+        username: 'sipio'
         secret: '1234'
       transport: udp

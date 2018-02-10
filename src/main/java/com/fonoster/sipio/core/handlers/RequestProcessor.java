@@ -113,21 +113,22 @@ public class RequestProcessor {
             return;
         }
 
-        if (routeInfo.getRoutingType() == RoutingType.DOMAIN_INGRESS_ROUTING) {
-            if (!this.gatewayConnector.hasIp(remoteIp)) { // calling from outside that is'nt in my gateways ip
-                serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
-                logger.warn("UNAUTHORIZED : Calling from a PSTN and it IP not defined in gateways !", requestIn);
-                return;
-            }
-
-        } else {
-            // Do not need to authorized ACK messages...
-            if (!method.equals(Request.ACK) && !method.equals(Request.BYE) && !this.authorized(requestIn, serverTransaction)) {
-                serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
-                logger.debug("", requestIn);
-                return;
-            }
-        }
+        // Other routing types are assume to be already login(registered)
+//        if (routeInfo.getRoutingType() == RoutingType.DOMAIN_INGRESS_ROUTING) {
+//            if (!this.gatewayConnector.hasIp(remoteIp)) { // calling from outside that is'nt in my gateways ip
+//                serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
+//                logger.warn("UNAUTHORIZED : Calling from a PSTN and it IP not defined in gateways !", requestIn);
+//                return;
+//            }
+//
+//        } else {
+//            // Do not need to authorized ACK messages...
+//            if (!method.equals(Request.ACK) && !method.equals(Request.BYE) && !this.authorized(requestIn, serverTransaction)) {
+//                serverTransaction.sendResponse(this.messageFactory.createResponse(Response.UNAUTHORIZED, requestIn));
+//                logger.debug("", requestIn);
+//                return;
+//            }
+//        }
 
         SipURI addressOfRecord = (SipURI) this.getAOR(requestIn);
 
@@ -176,7 +177,7 @@ public class RequestProcessor {
                 return;
             }
 
-            this.processRoute(requestIn, requestOut, route, serverTransaction);
+            this.processRoute(requestIn, requestOut, route, serverTransaction,routeInfo);
 
             logger.debug("", requestOut);
             return;
@@ -193,13 +194,13 @@ public class RequestProcessor {
 
         for (SipClient client : clients) {
             logger.info("Send INVITE Request for client : {} ", client.getId());
-            this.processRoute(requestIn, requestOut, client.getRoute(), serverTransaction);
+            this.processRoute(requestIn, requestOut, client.getRoute(), serverTransaction,routeInfo);
         }
 
         return;
     }
 
-    public void processRoute(Request requestIn, Request requestOut, Route route, ServerTransaction serverTransaction) throws Exception {
+    public void processRoute(Request requestIn, Request requestOut, Route route, ServerTransaction serverTransaction,RouteInfo routeInfo) throws Exception {
         requestOut.setRequestURI(route.getContactURI());
         RouteHeader routeHeader = (RouteHeader) requestIn.getHeader(RouteHeader.NAME);
         ViaHeader rVia = (ViaHeader) requestIn.getHeader(ViaHeader.NAME);
@@ -208,7 +209,7 @@ public class RequestProcessor {
         int localPort = lp.getPort();
         String localIp = lp.getIPAddress();
         String method = requestIn.getMethod();
-        String rcvHost = ((SipURI) route.getContactURI()).getHost();
+        String rcvHost = route.getContactURI().getHost();
 
         logger.debug("contactURI is -> " + route.getContactURI());
         logger.debug("Behind nat -> " + route.getNat());
@@ -218,15 +219,18 @@ public class RequestProcessor {
         logger.debug("received -> " + route.getReceived());
         logger.debug("rport -> " + route.getRport());
 
+        logger.info("route is : {}",new com.google.gson.Gson().toJson(route));
+
         String advertisedAddr;
         Integer advertisedPort;
 
-        if (this.config.getExternalAddress() != null && !IPUtils.isLocalNet(null, route.getSentByAddress())) {
+        if (this.config.getExternalAddress() != null && (!IPUtils.isLocalNet(null, route.getSentByAddress()) || route.getSentByAddress() == null || route.getSentByAddress().endsWith(".invalid"))) {
+            // No egress routing has sentByAddress. They are assume to be entities outside the local network.
             advertisedAddr = this.config.getExternalAddress().contains(":") ? this.config.getExternalAddress().split(":")[0] : this.config.getExternalAddress();
-            advertisedPort = this.config.getExternalAddress().contains(":") ? Integer.valueOf(this.config.getExternalAddress().split(":")[1]) : lp.getPort();
+            advertisedPort = this.config.getExternalAddress().contains(":") ? Integer.valueOf(this.config.getExternalAddress().split(":")[1]) : localPort;
         } else {
             advertisedAddr = localIp;
-            advertisedPort = lp.getPort();
+            advertisedPort = localPort;
         }
 
         logger.debug("advertisedAddr is -> " + advertisedAddr);
@@ -263,9 +267,8 @@ public class RequestProcessor {
         if (route.isThruGw()) {
             FromHeader fromHeader = (FromHeader) requestIn.getHeader(FromHeader.NAME);
             ToHeader toHeader = (ToHeader) requestIn.getHeader(ToHeader.NAME);
-            Header gwRefHeader = this.headerFactory.createHeader("GwRef", route.getGwRef());
-            Header remotePartyIdHeader = this.headerFactory
-                    .createHeader("Remote-Party-ID", "<sip:" + route.getDID() + "@" + route.getGwHost() + ">;screen=yes;party=calling");
+            Header gwRefHeader = this.headerFactory.createHeader("X-Gateway-Ref", route.getGwRef());
+            Header remotePartyIdHeader = this.headerFactory.createHeader("Remote-Party-ID", "<sip:" + route.getDID() + "@" + route.getGwHost() + ">;screen=yes;party=calling");
 
             String from = "sip:" + route.getGwUsername() + "@" + route.getGwHost();
             String to = "sip:" + Pattern.compile("sips?:(.*)@(.*)").split(toHeader.getAddress().toString())[1] + "@" + route.getGwHost();
@@ -276,14 +279,13 @@ public class RequestProcessor {
 
             fromHeader.setAddress(fromAddress);
             toHeader.setAddress(toAddress);
-
-            requestOut.setHeader(gwRefHeader);
             requestOut.setHeader(fromHeader);
             requestOut.setHeader(toHeader);
+
+            requestOut.setHeader(gwRefHeader);
             requestOut.setHeader(remotePartyIdHeader);
         }
 
-        // Warning: Not yet test :(
         requestOut.removeHeader("Proxy-Authorization");
 
         // Does not need a transaction
@@ -323,6 +325,7 @@ public class RequestProcessor {
         FromHeader fromHeader = (FromHeader) request.getHeader(FromHeader.NAME);
         SipURI fromURI = (SipURI) fromHeader.getAddress().getURI();
 
+        //WARNING: Should limit the amount of attempts...
         if (authHeader == null) {
             Response challengeResponse = this.messageFactory.createResponse(Response.PROXY_AUTHENTICATION_REQUIRED, request);
             this.dsam.generateChallenge(this.headerFactory, challengeResponse, fromURI.getHost());
@@ -330,7 +333,7 @@ public class RequestProcessor {
             logger.debug("", request);
             return false;
         }
-
+        // WARNING: If they are multiple peers with the same name this might be an issue
         User user = PeerRepository.getPeer(authHeader.getUsername());
 
         if (user == null) {
@@ -355,7 +358,7 @@ public class RequestProcessor {
 
 
     /**
-     * Discover DIDs sent via a non-standard headerRouًخع
+     * Discover DIDs sent via a non-standard header
      * The header must be added at config.spec.addressInfo[*]
      * If the such header is present then overwrite the AOR
      */
